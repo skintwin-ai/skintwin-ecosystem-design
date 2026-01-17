@@ -1,0 +1,56 @@
+graph TB
+    subgraph Core["Core Specification"]
+        skintwin["skintwin<br/>(Alchemist Engine Spec)"]
+    end
+
+    subgraph AI["AI/Cognitive Implementations"]
+        skintwin-asi["skintwin-asi<br/>(Cognitive Workbench)"]
+        multiskin["multiskin<br/>(Biological Modeling)"]
+    end
+
+    subgraph Applications["Business Applications"]
+        customer-portal["skintwin-customer-portal<br/>(Multi-tenant Platform)"]
+        regima-lms["regima-training-lms<br/>(Learning Management)"]
+    end
+
+    subgraph Integration["Integration Layer"]
+        integrations["skintwin-integrations<br/>(API Connectors)"]
+    end
+
+    subgraph Templates["Frontend Templates"]
+        directory["business-directory-template<br/>(Directory UI)"]
+        bus-listing["bus-listing<br/>(Listing Variant)"]
+    end
+
+    subgraph DevOps["DevOps & Management"]
+        org-skin["org-skin<br/>(GitHub SDK)"]
+    end
+
+    %% Specification relationships
+    skintwin -->|Implements| skintwin-asi
+    skintwin -->|Implements| multiskin
+
+    %% AI sharing
+    skintwin-asi <-->|Shares Agents| multiskin
+
+    %% Application dependencies
+    customer-portal -->|Consumes AI| skintwin-asi
+    customer-portal -->|Consumes AI| multiskin
+    customer-portal -->|Uses Connectors| integrations
+    regima-lms -->|Uses Connectors| integrations
+
+    %% Application links
+    customer-portal <-->|User Linking| regima-lms
+
+    %% Template usage
+    directory -->|UI Pattern| customer-portal
+
+    %% DevOps monitoring
+    org-skin -.->|Monitors| skintwin
+    org-skin -.->|Monitors| skintwin-asi
+    org-skin -.->|Monitors| multiskin
+    org-skin -.->|Monitors| customer-portal
+    org-skin -.->|Monitors| regima-lms
+    org-skin -.->|Monitors| integrations
+    org-skin -.->|Monitors| directory
+    org-skin -.->|Monitors| bus-listing

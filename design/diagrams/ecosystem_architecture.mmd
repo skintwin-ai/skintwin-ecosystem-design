@@ -1,0 +1,110 @@
+graph TB
+    subgraph External["External Platforms"]
+        Shopify["Shopify B2B/B2C"]
+        Wix["Wix Bookings"]
+        OpenCart["OpenCart POS"]
+        Stripe["Stripe Payments"]
+        PayStack["PayStack Payments"]
+        QuickBooks["QuickBooks"]
+        Xero["Xero"]
+        ERPNext["ERPNext"]
+        WorkOS["WorkOS SSO"]
+        PerfectCorp["Perfect Corp AI"]
+        ViaGlamour["ViaGlamour MFG"]
+    end
+
+    subgraph Frontend["Frontend Layer (Monorepo)"]
+        CustomerPortal["Customer Portal<br/>(React + TypeScript)"]
+        TrainingLMS["Training LMS<br/>(React + TypeScript)"]
+        BusinessDirectory["Business Directory<br/>(React + TypeScript)"]
+        SharedUI["Shared UI Library<br/>(shadcn/ui)"]
+        DesignSystem["Dark Atlas<br/>Design System"]
+    end
+
+    subgraph Gateway["API Gateway Layer"]
+        APIGateway["API Gateway<br/>(Kong / Custom)"]
+        Auth["Auth Middleware<br/>(JWT Validation)"]
+        RateLimit["Rate Limiting"]
+    end
+
+    subgraph Backend["Backend Services Layer"]
+        CognitiveService["Cognitive Service<br/>(Python + FastAPI + JAX)"]
+        CustomerOrgService["Customer & Org Service<br/>(Node.js + Express)"]
+        EcommBookingService["E-commerce & Booking Service<br/>(Python + Flask)"]
+        LMSService["LMS Service<br/>(Node.js + Express)"]
+    end
+
+    subgraph AI["AI/Cognitive Layer"]
+        AlchemistEngine["Alchemist Engine<br/>(Tensor Transformations)"]
+        DeepTreeEcho["Deep Tree Echo<br/>(Right Hemisphere)"]
+        Marduk["Marduk<br/>(Left Hemisphere)"]
+        JAXCEO["JAX CEO<br/>(Neural Orchestration)"]
+        Multiskin["Multiskin<br/>(Biological Modeling)"]
+    end
+
+    subgraph Infrastructure["Infrastructure Layer"]
+        EventBus["Event Bus<br/>(RabbitMQ / Kafka)"]
+        Database["PostgreSQL<br/>(Shared Database)"]
+        ServiceDiscovery["Service Discovery<br/>(Consul)"]
+        SecretsManager["Secrets Manager<br/>(Vault)"]
+    end
+
+    subgraph DevOps["DevOps & Monitoring"]
+        OrgSkin["org-skin<br/>(GitHub SDK)"]
+        Monitoring["Monitoring<br/>(Prometheus + Grafana)"]
+        Logging["Logging<br/>(ELK Stack)"]
+    end
+
+    %% Frontend to Gateway
+    CustomerPortal --> APIGateway
+    TrainingLMS --> APIGateway
+    BusinessDirectory --> APIGateway
+
+    %% Frontend shared dependencies
+    CustomerPortal -.-> SharedUI
+    TrainingLMS -.-> SharedUI
+    BusinessDirectory -.-> SharedUI
+    SharedUI -.-> DesignSystem
+
+    %% Gateway to Backend
+    APIGateway --> Auth
+    Auth --> RateLimit
+    RateLimit --> CognitiveService
+    RateLimit --> CustomerOrgService
+    RateLimit --> EcommBookingService
+    RateLimit --> LMSService
+
+    %% Backend to AI
+    CognitiveService --> AlchemistEngine
+    AlchemistEngine --> DeepTreeEcho
+    AlchemistEngine --> Marduk
+    AlchemistEngine --> JAXCEO
+    CognitiveService --> Multiskin
+
+    %% Backend to Infrastructure
+    CognitiveService --> Database
+    CustomerOrgService --> Database
+    EcommBookingService --> Database
+    LMSService --> Database
+
+    CustomerOrgService --> EventBus
+    EcommBookingService --> EventBus
+    LMSService --> EventBus
+
+    %% Backend to External
+    EcommBookingService --> Shopify
+    EcommBookingService --> Wix
+    EcommBookingService --> OpenCart
+    EcommBookingService --> Stripe
+    EcommBookingService --> PayStack
+    EcommBookingService --> QuickBooks
+    EcommBookingService --> Xero
+    EcommBookingService --> ERPNext
+    CustomerOrgService --> WorkOS
+    CognitiveService --> PerfectCorp
+    CognitiveService --> ViaGlamour
+
+    %% DevOps
+    OrgSkin -.-> Backend
+    Monitoring -.-> Backend
+    Logging -.-> Backend

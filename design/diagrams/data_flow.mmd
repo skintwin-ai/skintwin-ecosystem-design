@@ -1,0 +1,81 @@
+flowchart LR
+    subgraph Users["Users"]
+        RetailCustomer["Retail Customer"]
+        Therapist["Therapist"]
+        SalonOwner["Salon Owner"]
+        Admin["Administrator"]
+    end
+
+    subgraph Frontend["Frontend Applications"]
+        Portal["Customer Portal"]
+        LMS["Training LMS"]
+        Directory["Business Directory"]
+    end
+
+    subgraph Gateway["API Gateway"]
+        GW["Gateway"]
+    end
+
+    subgraph Services["Backend Services"]
+        CogSvc["Cognitive<br/>Service"]
+        CustSvc["Customer &<br/>Org Service"]
+        EcomSvc["E-commerce &<br/>Booking Service"]
+        LMSSvc["LMS<br/>Service"]
+    end
+
+    subgraph Data["Data Stores"]
+        DB[("PostgreSQL")]
+        Cache[("Redis Cache")]
+    end
+
+    subgraph Events["Event Bus"]
+        EB["RabbitMQ"]
+    end
+
+    subgraph External["External Systems"]
+        Shopify["Shopify"]
+        Wix["Wix"]
+        Payments["Payments"]
+    end
+
+    %% User flows
+    RetailCustomer -->|Browse/Book| Portal
+    RetailCustomer -->|Find Salon| Directory
+    Therapist -->|Manage Clients| Portal
+    Therapist -->|Learn| LMS
+    SalonOwner -->|Manage Business| Portal
+    Admin -->|Administer| Portal
+
+    %% Frontend to Gateway
+    Portal --> GW
+    LMS --> GW
+    Directory --> GW
+
+    %% Gateway to Services
+    GW -->|/api/cognitive/*| CogSvc
+    GW -->|/api/users/*| CustSvc
+    GW -->|/api/commerce/*| EcomSvc
+    GW -->|/api/lms/*| LMSSvc
+
+    %% Services to Data
+    CogSvc --> DB
+    CustSvc --> DB
+    EcomSvc --> DB
+    LMSSvc --> DB
+
+    CogSvc --> Cache
+    CustSvc --> Cache
+
+    %% Services to Events
+    CustSvc -->|user.created| EB
+    EcomSvc -->|order.placed| EB
+    LMSSvc -->|course.completed| EB
+
+    EB -->|user.created| LMSSvc
+    EB -->|order.placed| CustSvc
+    EB -->|course.completed| CustSvc
+
+    %% Services to External
+    EcomSvc --> Shopify
+    EcomSvc --> Wix
+    EcomSvc --> Payments
