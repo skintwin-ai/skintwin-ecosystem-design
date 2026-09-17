@@ -51,7 +51,7 @@ install_node_repo() {
     if [ -f pnpm-lock.yaml ]; then
       corepack pnpm install --frozen-lockfile
     elif [ -f yarn.lock ]; then
-      yarn install --frozen-lockfile
+      corepack yarn install --frozen-lockfile
     elif [ -f package-lock.json ]; then
       npm ci
     elif [ -f package.json ]; then
