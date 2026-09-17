@@ -124,7 +124,7 @@ class CloudAgentEnvTests(unittest.TestCase):
 
     def test_lockfile_policy_and_no_runners(self) -> None:
         self.assertIn("corepack pnpm install --frozen-lockfile", self.script)
-        self.assertIn("yarn install --frozen-lockfile", self.script)
+        self.assertIn("corepack yarn install --frozen-lockfile", self.script)
         self.assertIn("npm ci", self.script)
         self.assertNotIn("pnpm-workspace.yaml", self.script)
         self.assertNotRegex(self.script, r"(?m)^\s*pytest\b")
