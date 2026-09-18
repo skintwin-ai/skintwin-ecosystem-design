@@ -2,6 +2,15 @@
 
 This repository contains the comprehensive ecosystem design for the **skintwin-ai** organization. It provides a high-level overview of the integrated architecture, including the backend, frontend, and network layers that connect all repositories into a cohesive and scalable platform.
 
+## Cloud Agent Environment
+
+This hub is the versioned Cloud Agent environment for org-wide work. Start Cloud Agent runs from this repository so `.cursor/environment.json` loads.
+
+- Install script: [`scripts/cloud-agent-install.sh`](./scripts/cloud-agent-install.sh)
+- Agent notes: [`AGENTS.md`](./AGENTS.md)
+
+Install is idempotent and skip-missing. It bootstraps a CPU-core Node/Python subset. Other siblings stay checkout-only. Install does not run application tests or start daemons. A committed environment file replaces dashboard config for this revision.
+
 ## 1. Introduction
 
 The SkinTwin-AI ecosystem is a collection of repositories that together form a revolutionary, AI-driven beauty-tech platform. This document outlines the architecture that integrates these components, enabling seamless data flow, shared services, and a unified user experience.
