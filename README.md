@@ -6,10 +6,11 @@ This repository contains the comprehensive ecosystem design for the **skintwin-a
 
 This hub is the versioned Cloud Agent environment for org-wide work. Start Cloud Agent runs from this repository so `.cursor/environment.json` loads.
 
+- Domain registry: [`domain/org-ecosystem.json`](./domain/org-ecosystem.json)
 - Install script: [`scripts/cloud-agent-install.sh`](./scripts/cloud-agent-install.sh)
 - Agent notes: [`AGENTS.md`](./AGENTS.md)
 
-Install is idempotent and skip-missing. It bootstraps a CPU-core Node/Python subset. Other siblings stay checkout-only. Install does not run application tests or start daemons. A committed environment file replaces dashboard config for this revision.
+Install is idempotent and skip-missing. The registry owns CPU-core vs checkout-only identity and install kind. Other siblings stay checkout-only. Install does not run application tests or start daemons. A committed environment file replaces dashboard config for this revision.
 
 ## 1. Introduction
 

@@ -1,0 +1,324 @@
+{
+  "hub": {
+    "org": "skintwin-ai",
+    "name": "skintwin-ecosystem-design",
+    "environmentName": "skintwin-ai org ecosystem",
+    "install": "./scripts/cloud-agent-install.sh",
+    "environmentKeys": ["name", "install", "repositoryDependencies"]
+  },
+  "policies": {
+    "skipMissing": true,
+    "frozenLockfiles": true,
+    "hubOnlyFiles": true,
+    "allowStart": false,
+    "allowTerminals": false,
+    "allowLiveSecrets": false,
+    "allowSchemaKey": false,
+    "allowGpuJuliaPhpDefaultInstall": false,
+    "neverAddPnpmWorkspaceYamlTo": ["regima-platform"],
+    "doNotFixPreexistingSiblingBugs": [
+      "org-skin aggregator imports",
+      "skintwinnector TypeScript assets",
+      "skintwin-bot missing dist/entry.js"
+    ]
+  },
+  "searchRoots": ["/agent/repos", "/workspace/repos", "/workspace"],
+  "repos": [
+    {
+      "name": "SolutionSpaceKernel",
+      "github": "github.com/skintwin-ai/SolutionSpaceKernel",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "mixed"
+    },
+    {
+      "name": "Yggdrasil",
+      "github": "github.com/skintwin-ai/Yggdrasil",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "julia"
+    },
+    {
+      "name": "anycog",
+      "github": "github.com/skintwin-ai/anycog",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "mixed"
+    },
+    {
+      "name": "cognitive-architecture",
+      "github": "github.com/skintwin-ai/cognitive-architecture",
+      "role": "cpu-core",
+      "installKind": "npm",
+      "stack": "node",
+      "installOrder": 4
+    },
+    {
+      "name": "ecosystem-bridge",
+      "github": "github.com/skintwin-ai/ecosystem-bridge",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "mixed"
+    },
+    {
+      "name": "esm",
+      "github": "github.com/skintwin-ai/esm",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "gpu"
+    },
+    {
+      "name": "gnu_gneuralnetwork",
+      "github": "github.com/skintwin-ai/gnu_gneuralnetwork",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "gpu"
+    },
+    {
+      "name": "llm-foundry",
+      "github": "github.com/skintwin-ai/llm-foundry",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "gpu"
+    },
+    {
+      "name": "mini-swe-agent",
+      "github": "github.com/skintwin-ai/mini-swe-agent",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "python"
+    },
+    {
+      "name": "multiskin",
+      "github": "github.com/skintwin-ai/multiskin",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "gpu"
+    },
+    {
+      "name": "neuro-symbolic-core",
+      "github": "github.com/skintwin-ai/neuro-symbolic-core",
+      "role": "cpu-core",
+      "installKind": "python-packages",
+      "stack": "python",
+      "installOrder": 9,
+      "editablePackages": ["./packages/nettica", "./packages/neuro-symbolic-hybrid"],
+      "packages": ["pytest"]
+    },
+    {
+      "name": "ojskin",
+      "github": "github.com/skintwin-ai/ojskin",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "php"
+    },
+    {
+      "name": "openapi-skintwin",
+      "github": "github.com/skintwin-ai/openapi-skintwin",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "mixed"
+    },
+    {
+      "name": "org-analysis",
+      "github": "github.com/skintwin-ai/org-analysis",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "mixed"
+    },
+    {
+      "name": "org-skin",
+      "github": "github.com/skintwin-ai/org-skin",
+      "role": "cpu-core",
+      "installKind": "python-editable",
+      "stack": "python",
+      "installOrder": 7,
+      "editableSpec": ".[dev]"
+    },
+    {
+      "name": "pcsdbx",
+      "github": "github.com/skintwin-ai/pcsdbx",
+      "role": "cpu-core",
+      "installKind": "presence-only",
+      "stack": "python",
+      "installOrder": 10,
+      "presenceNote": "stdlib only"
+    },
+    {
+      "name": "regima-persistence-docs",
+      "github": "github.com/skintwin-ai/regima-persistence-docs",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "docs"
+    },
+    {
+      "name": "regima-platform",
+      "github": "github.com/skintwin-ai/regima-platform",
+      "role": "cpu-core",
+      "installKind": "pnpm",
+      "stack": "node",
+      "installOrder": 5,
+      "constraints": ["never-add-pnpm-workspace-yaml"]
+    },
+    {
+      "name": "regima-train-nnllms",
+      "github": "github.com/skintwin-ai/regima-train-nnllms",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "gpu"
+    },
+    {
+      "name": "regima-training-lms",
+      "github": "github.com/skintwin-ai/regima-training-lms",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "node"
+    },
+    {
+      "name": "regima-website",
+      "github": "github.com/skintwin-ai/regima-website",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "node"
+    },
+    {
+      "name": "regular-polytope-networks",
+      "github": "github.com/skintwin-ai/regular-polytope-networks",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "gpu"
+    },
+    {
+      "name": "skin-multiscale-model",
+      "github": "github.com/skintwin-ai/skin-multiscale-model",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "gpu"
+    },
+    {
+      "name": "skin-zone",
+      "github": "github.com/skintwin-ai/skin-zone",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "node"
+    },
+    {
+      "name": "skin7nn",
+      "github": "github.com/skintwin-ai/skin7nn",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "gpu"
+    },
+    {
+      "name": "skincare-directory",
+      "github": "github.com/skintwin-ai/skincare-directory",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "node"
+    },
+    {
+      "name": "skincare-salon-app",
+      "github": "github.com/skintwin-ai/skincare-salon-app",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "node"
+    },
+    {
+      "name": "skinform",
+      "github": "github.com/skintwin-ai/skinform",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "node"
+    },
+    {
+      "name": "skinport",
+      "github": "github.com/skintwin-ai/skinport",
+      "role": "cpu-core",
+      "installKind": "pnpm",
+      "stack": "node",
+      "installOrder": 2
+    },
+    {
+      "name": "skinsource-pro",
+      "github": "github.com/skintwin-ai/skinsource-pro",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "mixed"
+    },
+    {
+      "name": "skinsuitesdk",
+      "github": "github.com/skintwin-ai/skinsuitesdk",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "node"
+    },
+    {
+      "name": "skintwin",
+      "github": "github.com/skintwin-ai/skintwin",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "docs"
+    },
+    {
+      "name": "skintwin-asi",
+      "github": "github.com/skintwin-ai/skintwin-asi",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "node"
+    },
+    {
+      "name": "skintwin-backend-paphos",
+      "github": "github.com/skintwin-ai/skintwin-backend-paphos",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "mixed"
+    },
+    {
+      "name": "skintwin-bot",
+      "github": "github.com/skintwin-ai/skintwin-bot",
+      "role": "cpu-core",
+      "installKind": "pnpm",
+      "stack": "node",
+      "installOrder": 6
+    },
+    {
+      "name": "skintwin-customer-portal",
+      "github": "github.com/skintwin-ai/skintwin-customer-portal",
+      "role": "cpu-core",
+      "installKind": "pnpm",
+      "stack": "node",
+      "installOrder": 3
+    },
+    {
+      "name": "skintwin-integrations",
+      "github": "github.com/skintwin-ai/skintwin-integrations",
+      "role": "cpu-core",
+      "installKind": "python-requirements",
+      "stack": "python",
+      "installOrder": 8,
+      "requirementsFile": "requirements.txt"
+    },
+    {
+      "name": "skintwin-salon",
+      "github": "github.com/skintwin-ai/skintwin-salon",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "node"
+    },
+    {
+      "name": "skintwind",
+      "github": "github.com/skintwin-ai/skintwind",
+      "role": "checkout-only",
+      "installKind": "none",
+      "stack": "node"
+    },
+    {
+      "name": "skintwinnector",
+      "github": "github.com/skintwin-ai/skintwinnector",
+      "role": "cpu-core",
+      "installKind": "yarn",
+      "stack": "node",
+      "installOrder": 1
+    }
+  ]
+}
