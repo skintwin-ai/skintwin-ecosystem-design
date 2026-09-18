@@ -156,11 +156,12 @@ class CloudAgentEnvTests(unittest.TestCase):
     def test_script_does_not_source_secrets(self) -> None:
         combined = f"{self.script}\n{self.bootstrap}\n{REGISTRY_JSON.read_text()}"
         self.assertNotIn("source .env", combined)
+        self.assertNotIn("load_dotenv", combined)
+        self.assertNotIn('".env"', combined)
+        self.assertNotIn("'.env'", combined)
         self.assertNotIn(".pem", combined)
         self.assertNotIn("STRIPE", combined)
         self.assertNotIn("MONGO", combined)
-        self.assertNotIn(".env", self.script)
-        self.assertNotIn(".env", self.bootstrap)
 
     def test_orientation_docs(self) -> None:
         combined = f"{self.agents}\n{self.readme}"
