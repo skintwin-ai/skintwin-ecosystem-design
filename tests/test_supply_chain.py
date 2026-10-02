@@ -14,7 +14,12 @@ if str(HUB_ROOT) not in sys.path:
     sys.path.insert(0, str(HUB_ROOT))
 
 from domain.model import load_registry  # noqa: E402
-from domain.platform import REFERENCE_COMMANDS, run as run_platform  # noqa: E402
+from domain.platform import (
+    REFERENCE_COMMANDS,
+    RETAIL_FULFILLMENT,
+    TREATMENT_FULFILLMENT,
+    run as run_platform,
+)  # noqa: E402
 from domain.supply_chain import (  # noqa: E402
     COMMAND_STAGE,
     PLANT,
@@ -194,8 +199,10 @@ class SupplyChainTests(unittest.TestCase):
             self.assertNotEqual(refused.returncode, 0)
             self.assertFalse(ledger.exists())
             chain = run_platform(ledger)
-        self.assertEqual(chain.trace("order-treatment")["outcome"], 81)
-        self.assertEqual(chain.trace("order-retail")["ingredients"], ("ascorbic", "hyaluronic"))
+        self.assertEqual(chain.trace(TREATMENT_FULFILLMENT)["outcome"], 81)
+        self.assertEqual(chain.trace(RETAIL_FULFILLMENT)["ingredients"], ("ascorbic", "hyaluronic"))
+        self.assertEqual(chain.trace(RETAIL_FULFILLMENT)["outcome"], 72)
+        self.assertEqual(chain.trace(TREATMENT_FULFILLMENT)["practitioner"], "aya")
         self.assertEqual(chain.lot_remaining("lot-ascorbic"), 30_000)
         self.assertEqual(
             [record[0] for record in REFERENCE_COMMANDS].count("manufacture"),
@@ -267,7 +274,7 @@ class SupplyChainTests(unittest.TestCase):
                 ("skintwin-salon", "chain_stage.mjs", "locate.cjs"),
                 ("skintwin-salon", "src/api/dev-server.mjs", "useSharedLedger"),
                 ("regima-training-lms", "chain_stage.mjs", "locate.cjs"),
-                ("regima-training-lms", "server/routes.ts", "useSharedLedger"),
+                ("regima-training-lms", "server/routes.ts", "recordCertificate"),
                 ("skintwin-integrations", "chain_stage.py", "locate.py"),
                 ("skintwin-integrations", "AmazingSalonApp9ragbot3/app.py", "use_shared_ledger"),
                 ("skintwin", "chain_stage.py", "locate.py"),

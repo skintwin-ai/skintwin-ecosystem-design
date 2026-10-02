@@ -7,7 +7,7 @@ You keep the skintwin-ai supply chain as one ledger, not a new branch in each si
 
 Canonical stages: `domain/supply-chain.json`
 Ledger: `domain/supply_chain.py`
-Exercise: `python3 -m domain.platform`
+Exercise: `python3 -m domain.platform` calls each stage `invoke` function with a product payload.
 
 When invoked:
 

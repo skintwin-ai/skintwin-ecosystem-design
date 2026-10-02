@@ -7,7 +7,11 @@
       "artifact": "ingredient",
       "entry": "chain_stage.py",
       "surface": "backend/src/routes/ingredients.py",
-      "marker": "record_created_ingredient"
+      "marker": "record_created_ingredient",
+      "invoke": {
+        "module": "backend/src/chain_commands.py",
+        "function": "record_created_ingredient"
+      }
     },
     {
       "id": "source",
@@ -15,7 +19,11 @@
       "artifact": "supplier-qualification",
       "entry": "chain_stage.py",
       "surface": "backend/src/routes/suppliers.py",
-      "marker": "record_supplier_qualification"
+      "marker": "record_supplier_qualification",
+      "invoke": {
+        "module": "backend/src/chain_commands.py",
+        "function": "record_supplier_qualification"
+      }
     },
     {
       "id": "procure",
@@ -23,7 +31,11 @@
       "artifact": "ingredient-lot",
       "entry": "chain_stage.py",
       "surface": "backend/src/routes/procurement.py",
-      "marker": "record_received_lot"
+      "marker": "record_received_lot",
+      "invoke": {
+        "module": "backend/src/chain_commands.py",
+        "function": "record_received_lot"
+      }
     },
     {
       "id": "formulate",
@@ -31,7 +43,11 @@
       "artifact": "formula",
       "entry": "chain_stage.mjs",
       "surface": "app/routes/api.pif-import.ts",
-      "marker": "recordFormulation"
+      "marker": "recordFormulation",
+      "invoke": {
+        "module": "chain_stage.mjs",
+        "function": "recordFormulation"
+      }
     },
     {
       "id": "manufacture",
@@ -39,8 +55,12 @@
       "artifact": "batch",
       "entry": "chain_stage.mjs",
       "surface": "app/routes/api.supply-chain.ts",
-      "marker": "manufactureBatch",
-      "note": "Skinform releases a batch from a formula and lot allocations. The hub ledger stores the genealogy."
+      "marker": "recordBatch",
+      "note": "Skinform releases a batch from a formula and lot allocations. The hub ledger stores the genealogy.",
+      "invoke": {
+        "module": "chain_stage.mjs",
+        "function": "recordBatch"
+      }
     },
     {
       "id": "catalog",
@@ -48,7 +68,11 @@
       "artifact": "sku",
       "entry": "chain_stage.mjs",
       "surface": "server/routers.ts",
-      "marker": "formulaId"
+      "marker": "catalogProduct",
+      "invoke": {
+        "module": "chain_stage.mjs",
+        "function": "catalogProduct"
+      }
     },
     {
       "id": "distribute",
@@ -56,7 +80,11 @@
       "artifact": "location-stock",
       "entry": "chain_stage.mjs",
       "surface": "src/api/appointments/create.js",
-      "marker": "recordDeliveries"
+      "marker": "recordDeliveries",
+      "invoke": {
+        "module": "chain_stage.mjs",
+        "function": "recordDeliveries"
+      }
     },
     {
       "id": "certify",
@@ -64,7 +92,11 @@
       "artifact": "practitioner-certificate",
       "entry": "chain_stage.mjs",
       "surface": "server/routes.ts",
-      "marker": "certify_practitioner"
+      "marker": "recordCertificate",
+      "invoke": {
+        "module": "chain_stage.mjs",
+        "function": "recordCertificate"
+      }
     },
     {
       "id": "fulfill",
@@ -72,7 +104,11 @@
       "artifact": "fulfillment",
       "entry": "chain_stage.mjs",
       "surface": "server/routers.ts",
-      "marker": "acceptOrderFulfillments"
+      "marker": "acceptOrderFulfillments",
+      "invoke": {
+        "module": "chain_stage.mjs",
+        "function": "acceptOrderFulfillments"
+      }
     },
     {
       "id": "account",
@@ -80,7 +116,11 @@
       "artifact": "settlement",
       "entry": "chain_stage.py",
       "surface": "AmazingSalonApp9ragbot3/routes/pos.py",
-      "marker": "settlement_for_payment"
+      "marker": "settlement_for_payment",
+      "invoke": {
+        "module": "chain_stage.py",
+        "function": "settlement_for_payment"
+      }
     },
     {
       "id": "outcome",
@@ -89,7 +129,11 @@
       "entry": "chain_stage.py",
       "surface_owner": "skintwin-customer-portal",
       "surface": "server/routers.ts",
-      "marker": "recordSkinOutcome"
+      "marker": "recordSkinOutcome",
+      "invoke": {
+        "module": "outcome.mjs",
+        "function": "recordSkinOutcome"
+      }
     }
   ]
 }

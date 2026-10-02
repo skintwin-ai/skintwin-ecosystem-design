@@ -47,6 +47,8 @@ class Stage:
     surface: str = ""
     marker: str = ""
     surface_owner: str = ""
+    invoke_module: str = ""
+    invoke_function: str = ""
 
 
 @dataclass(frozen=True)
@@ -682,6 +684,13 @@ def load_stages(
         surface = _text(str(raw.get("surface", "")), "stage surface")
         marker = _text(str(raw.get("marker", "")), "stage marker")
         surface_owner = str(raw.get("surface_owner") or owner).strip()
+        invoke = raw.get("invoke")
+        if not isinstance(invoke, Mapping):
+            raise ChainError(f"{stage_id}: invoke must name the product function")
+        invoke_module = _text(str(invoke.get("module", "")), "invoke module")
+        invoke_function = _text(str(invoke.get("function", "")), "invoke function")
+        if invoke_module.startswith(("/", "\\")) or ".." in Path(invoke_module).parts:
+            raise ChainError(f"{stage_id}: invoke module must be a relative path")
         note = raw.get("note") or ""
         if not isinstance(note, str):
             raise ChainError(f"{stage_id}: note must be a string")
@@ -696,7 +705,18 @@ def load_stages(
         seen_ids.add(stage_id)
         seen_artifacts.add(artifact)
         stages.append(
-            Stage(stage_id, owner, artifact, entry, note, surface, marker, surface_owner)
+            Stage(
+                stage_id,
+                owner,
+                artifact,
+                entry,
+                note,
+                surface,
+                marker,
+                surface_owner,
+                invoke_module,
+                invoke_function,
+            )
         )
     commanded = set(COMMAND_STAGE.values())
     if seen_ids != commanded:
