@@ -1,71 +1,95 @@
 {
+  "ledger": "var/supply-chain.jsonl",
   "stages": [
     {
       "id": "specify",
       "owner": "skinsource-pro",
       "artifact": "ingredient",
-      "entry": "chain_stage.py"
+      "entry": "chain_stage.py",
+      "surface": "backend/src/routes/ingredients.py",
+      "marker": "record_created_ingredient"
     },
     {
       "id": "source",
       "owner": "skinsource-pro",
       "artifact": "supplier-qualification",
-      "entry": "chain_stage.py"
+      "entry": "chain_stage.py",
+      "surface": "backend/src/routes/suppliers.py",
+      "marker": "record_supplier_qualification"
     },
     {
       "id": "procure",
       "owner": "skinsource-pro",
       "artifact": "ingredient-lot",
-      "entry": "chain_stage.py"
+      "entry": "chain_stage.py",
+      "surface": "backend/src/routes/procurement.py",
+      "marker": "record_received_lot"
     },
     {
       "id": "formulate",
       "owner": "skinform",
       "artifact": "formula",
-      "entry": "chain_stage.mjs"
+      "entry": "chain_stage.mjs",
+      "surface": "app/routes/api.pif-import.ts",
+      "marker": "recordFormulation"
     },
     {
       "id": "manufacture",
       "owner": "skinform",
       "artifact": "batch",
       "entry": "chain_stage.mjs",
+      "surface": "app/routes/api.supply-chain.ts",
+      "marker": "manufactureBatch",
       "note": "Skinform releases a batch from a formula and lot allocations. The hub ledger stores the genealogy."
     },
     {
       "id": "catalog",
       "owner": "skintwin-customer-portal",
       "artifact": "sku",
-      "entry": "chain_stage.mjs"
+      "entry": "chain_stage.mjs",
+      "surface": "server/routers.ts",
+      "marker": "formulaId"
     },
     {
       "id": "distribute",
       "owner": "skintwin-salon",
       "artifact": "location-stock",
-      "entry": "chain_stage.mjs"
+      "entry": "chain_stage.mjs",
+      "surface": "src/api/appointments/create.js",
+      "marker": "recordDeliveries"
     },
     {
       "id": "certify",
       "owner": "regima-training-lms",
       "artifact": "practitioner-certificate",
-      "entry": "chain_stage.mjs"
+      "entry": "chain_stage.mjs",
+      "surface": "server/routes.ts",
+      "marker": "certify_practitioner"
     },
     {
       "id": "fulfill",
       "owner": "skintwin-customer-portal",
       "artifact": "fulfillment",
-      "entry": "chain_stage.mjs"
+      "entry": "chain_stage.mjs",
+      "surface": "server/routers.ts",
+      "marker": "acceptOrderFulfillments"
     },
     {
       "id": "account",
       "owner": "skintwin-integrations",
       "artifact": "settlement",
-      "entry": "chain_stage.py"
+      "entry": "chain_stage.py",
+      "surface": "AmazingSalonApp9ragbot3/routes/pos.py",
+      "marker": "settlement_for_payment"
     },
     {
       "id": "outcome",
       "owner": "skintwin",
       "artifact": "skin-outcome",
-      "entry": "chain_stage.py"
+      "entry": "chain_stage.py",
+      "surface_owner": "skintwin-customer-portal",
+      "surface": "server/routers.ts",
+      "marker": "recordSkinOutcome"
     }
   ]
 }
