@@ -202,6 +202,94 @@ class SupplyChainTests(unittest.TestCase):
             1,
         )
 
+    def test_stage_owners_read_the_hub_from_the_registry(self) -> None:
+        import importlib.util
+        import subprocess
+
+        from domain.bootstrap import find_repo
+        from domain.locate import checkout, ledger_file, module_hub, stage_entry
+
+        previous_hub = os.environ.pop("SKINTWIN_HUB_ROOT", None)
+        previous_roots = os.environ.pop("CLOUD_AGENT_REPO_ROOTS", None)
+        try:
+            self.assertEqual(module_hub(), HUB_ROOT)
+            self.assertEqual(ledger_file(HUB_ROOT), HUB_ROOT / "var" / "supply-chain.jsonl")
+            skinform = find_repo("skinform", self.registry)
+            skintwin = find_repo("skintwin", self.registry)
+            self.assertIsNotNone(skinform)
+            self.assertIsNotNone(skintwin)
+            self.assertEqual(checkout("skinform"), skinform)
+            self.assertEqual(stage_entry("outcome"), skintwin / "chain_stage.py")
+            self.assertEqual(stage_entry("manufacture"), skinform / "chain_stage.mjs")
+            spec = importlib.util.spec_from_file_location(
+                "skintwin_chain_locate", HUB_ROOT / "domain" / "locate.py"
+            )
+            self.assertIsNotNone(spec)
+            self.assertIsNotNone(spec and spec.loader)
+            loaded = importlib.util.module_from_spec(spec)
+            assert spec is not None and spec.loader is not None
+            spec.loader.exec_module(loaded)
+            self.assertEqual(loaded.stage_entry("outcome"), skintwin / "chain_stage.py")
+            env = os.environ.copy()
+            env.pop("SKINTWIN_HUB_ROOT", None)
+            env.pop("CLOUD_AGENT_REPO_ROOTS", None)
+            completed = subprocess.run(
+                [
+                    "node",
+                    "-e",
+                    "const locate = require('./domain/locate.cjs');"
+                    "const entry = locate.stageEntry('outcome');"
+                    "if (!entry || !entry.endsWith('/skintwin/chain_stage.py')) process.exit(1);"
+                    "process.stdout.write(locate.hubRoot());",
+                ],
+                cwd=HUB_ROOT,
+                capture_output=True,
+                text=True,
+                env=env,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertEqual(Path(completed.stdout.strip()), HUB_ROOT)
+            forbidden = (
+                "/agent/repos/skintwin-ecosystem-design",
+                "/workspace/repos/skintwin-ecosystem-design",
+                "/agent/repos/skintwin/chain_stage.py",
+                "/workspace/repos/skintwin/chain_stage.py",
+                "supply-chain.jsonl",
+            )
+            owners = (
+                ("skinsource-pro", "backend/src/chain_commands.py", "locate.py"),
+                ("skinform", "chain_stage.mjs", "locate.cjs"),
+                ("skinform", "app/routes/api.supply-chain.ts", "useSharedLedger"),
+                ("skintwin-customer-portal", "chain_stage.mjs", "locate.cjs"),
+                ("skintwin-customer-portal", "outcome.mjs", "stageEntry"),
+                ("skintwin-customer-portal", "server/supplyChain.ts", "useSharedLedger"),
+                ("skintwin-salon", "chain_stage.mjs", "locate.cjs"),
+                ("skintwin-salon", "src/api/dev-server.mjs", "useSharedLedger"),
+                ("regima-training-lms", "chain_stage.mjs", "locate.cjs"),
+                ("regima-training-lms", "server/routes.ts", "useSharedLedger"),
+                ("skintwin-integrations", "chain_stage.py", "locate.py"),
+                ("skintwin-integrations", "AmazingSalonApp9ragbot3/app.py", "use_shared_ledger"),
+                ("skintwin", "chain_stage.py", "locate.py"),
+            )
+            for name, relative, marker in owners:
+                directory = find_repo(name, self.registry)
+                self.assertIsNotNone(directory, name)
+                assert directory is not None
+                text = (directory / relative).read_text(encoding="utf-8")
+                self.assertIn(marker, text, relative)
+                for needle in forbidden:
+                    self.assertNotIn(needle, text, f"{relative} hardcodes {needle}")
+        finally:
+            if previous_hub is None:
+                os.environ.pop("SKINTWIN_HUB_ROOT", None)
+            else:
+                os.environ["SKINTWIN_HUB_ROOT"] = previous_hub
+            if previous_roots is None:
+                os.environ.pop("CLOUD_AGENT_REPO_ROOTS", None)
+            else:
+                os.environ["CLOUD_AGENT_REPO_ROOTS"] = previous_roots
+
     def test_platform_refuses_a_ledger_that_already_has_records(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             ledger = Path(tmp) / "supply-chain.jsonl"

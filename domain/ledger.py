@@ -10,10 +10,11 @@ import json
 import os
 from pathlib import Path
 
+from domain.locate import ledger_file, module_hub
 from domain.supply_chain import Chain, ChainError
 
-HUB_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_LEDGER = HUB_ROOT / "var" / "supply-chain.jsonl"
+HUB_ROOT = module_hub()
+DEFAULT_LEDGER = ledger_file(HUB_ROOT)
 
 
 def ledger_path() -> Path | None:

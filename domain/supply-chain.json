@@ -1,4 +1,5 @@
 {
+  "ledger": "var/supply-chain.jsonl",
   "stages": [
     {
       "id": "specify",
