@@ -128,7 +128,7 @@
       "artifact": "sale-return",
       "entry": "chain_stage.mjs",
       "surface": "server/routers.ts",
-      "marker": "acceptSaleReturn",
+      "marker": "acceptCancelledOrderReturns",
       "invoke": {
         "module": "chain_stage.mjs",
         "function": "acceptSaleReturn"
