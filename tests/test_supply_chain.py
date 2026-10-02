@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 import sys
 import tempfile
 import unittest
@@ -14,9 +13,8 @@ HUB_ROOT = Path(__file__).resolve().parents[1]
 if str(HUB_ROOT) not in sys.path:
     sys.path.insert(0, str(HUB_ROOT))
 
-from domain.bootstrap import find_repo  # noqa: E402
-from domain.ledger import replay  # noqa: E402
 from domain.model import load_registry  # noqa: E402
+from domain.platform import REFERENCE_COMMANDS, run as run_platform  # noqa: E402
 from domain.supply_chain import (  # noqa: E402
     COMMAND_STAGE,
     PLANT,
@@ -51,7 +49,7 @@ class SupplyChainTests(unittest.TestCase):
         self.assertIn("skintwin-integrations", owners)
         self.assertIn("skintwin", owners)
         manufacture = next(stage for stage in self.stages if stage.id == "manufacture")
-        self.assertEqual(manufacture.owner, self.registry.hub.name)
+        self.assertEqual(manufacture.owner, "skinform")
 
     def test_reference_serum_traces_both_fulfillments(self) -> None:
         retail = self.chain.trace("order-retail")
@@ -169,14 +167,15 @@ class SupplyChainTests(unittest.TestCase):
             self.assertTrue(stage.entry.endswith((".py", ".mjs")))
 
     def test_owner_commands_share_one_replayable_ledger(self) -> None:
-        serum = _reference_commands()
         with tempfile.TemporaryDirectory() as tmp:
             ledger = Path(tmp) / "supply-chain.jsonl"
             env = os.environ.copy()
             env["SKINTWIN_CHAIN_LEDGER"] = str(ledger)
             env["SKINTWIN_HUB_ROOT"] = str(HUB_ROOT)
             env.pop("SKINTWIN_CHAIN_SKIP_DISPATCH", None)
-            refused = self._run_owner(
+            from domain.platform import run_owner
+
+            refused = run_owner(
                 "record_outcome",
                 {
                     "outcome_id": "too-soon",
@@ -188,58 +187,21 @@ class SupplyChainTests(unittest.TestCase):
             )
             self.assertNotEqual(refused.returncode, 0)
             self.assertFalse(ledger.exists())
-            for command, args in serum:
-                completed = self._run_owner(command, args, env)
-                self.assertEqual(
-                    completed.returncode,
-                    0,
-                    f"{command}\n{completed.stdout}\n{completed.stderr}",
-                )
-            chain = replay(ledger)
+            chain = run_platform(ledger)
         self.assertEqual(chain.trace("order-treatment")["outcome"], 81)
         self.assertEqual(chain.trace("order-retail")["ingredients"], ("ascorbic", "hyaluronic"))
         self.assertEqual(chain.lot_remaining("lot-ascorbic"), 30_000)
-
-    def _run_owner(self, command: str, args: dict, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
-        stage_id = COMMAND_STAGE[command]
-        stage = next(item for item in self.stages if item.id == stage_id)
-        if stage.owner == self.registry.hub.name:
-            entry = HUB_ROOT / stage.entry
-        else:
-            checkout = find_repo(stage.owner, self.registry)
-            self.assertIsNotNone(checkout, stage.owner)
-            entry = checkout / stage.entry
-        runner = [sys.executable, str(entry)] if entry.suffix == ".py" else ["node", str(entry)]
-        return subprocess.run(
-            runner,
-            input=json.dumps({"command": command, "args": args}),
-            text=True,
-            capture_output=True,
-            env=env,
-            check=False,
+        self.assertEqual(
+            [record[0] for record in REFERENCE_COMMANDS].count("manufacture"),
+            1,
         )
 
-
-def _reference_commands() -> list[tuple[str, dict]]:
-    return [
-        ("specify_ingredient", {"ingredient_id": "ascorbic", "inci": "Ascorbic Acid", "cas": "50-81-7"}),
-        ("specify_ingredient", {"ingredient_id": "hyaluronic", "inci": "Sodium Hyaluronate", "cas": "9067-32-7"}),
-        ("qualify_supplier", {"qualification_id": "qual-ascorbic", "supplier_name": "Cape Acids", "ingredient_id": "ascorbic"}),
-        ("qualify_supplier", {"qualification_id": "qual-hyaluronic", "supplier_name": "Coastal Polymers", "ingredient_id": "hyaluronic"}),
-        ("receive_lot", {"lot_id": "lot-ascorbic", "ingredient_id": "ascorbic", "qualification_id": "qual-ascorbic", "milligrams": 50000}),
-        ("receive_lot", {"lot_id": "lot-hyaluronic", "ingredient_id": "hyaluronic", "qualification_id": "qual-hyaluronic", "milligrams": 5000}),
-        ("define_formula", {"formula_id": "serum-c", "name": "Vitamin C serum", "lines": [["ascorbic", 10000], ["hyaluronic", 500]]}),
-        ("catalog_sku", {"sku_id": "sku-serum-c", "formula_id": "serum-c", "name": "Vitamin C serum 10.5g"}),
-        ("manufacture", {"batch_id": "batch-1", "sku_id": "sku-serum-c", "units": 2, "allocations": [["ascorbic", "lot-ascorbic", 20000], ["hyaluronic", "lot-hyaluronic", 1000]]}),
-        ("transfer", {"transfer_id": "xfer-cape-town", "sku_id": "sku-serum-c", "batch_id": "batch-1", "source": "plant", "destination": "cape-town", "milligrams": 10500}),
-        ("certify_practitioner", {"certificate_id": "cert-aya", "practitioner_id": "aya", "course": "RegimA facial protocol"}),
-        ("fulfill", {"fulfillment_id": "order-retail", "sku_id": "sku-serum-c", "location": "cape-town", "milligrams": 5000, "kind": "retail", "practitioner_id": None}),
-        ("fulfill", {"fulfillment_id": "order-treatment", "sku_id": "sku-serum-c", "location": "cape-town", "milligrams": 2000, "kind": "treatment", "practitioner_id": "aya"}),
-        ("settle", {"settlement_id": "pay-retail", "fulfillment_id": "order-retail", "amount_cents": 18500, "currency": "ZAR"}),
-        ("settle", {"settlement_id": "pay-treatment", "fulfillment_id": "order-treatment", "amount_cents": 45000, "currency": "ZAR"}),
-        ("record_outcome", {"outcome_id": "outcome-retail", "fulfillment_id": "order-retail", "concern": "dullness", "score": 72}),
-        ("record_outcome", {"outcome_id": "outcome-treatment", "fulfillment_id": "order-treatment", "concern": "pigmentation", "score": 81}),
-    ]
+    def test_platform_refuses_a_ledger_that_already_has_records(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp) / "supply-chain.jsonl"
+            ledger.write_text("{}\n")
+            with self.assertRaises(ChainError):
+                run_platform(ledger)
 
 
 if __name__ == "__main__":

@@ -7,7 +7,7 @@ You keep the skintwin-ai supply chain as one ledger, not a new branch in each si
 
 Canonical stages: `domain/supply-chain.json`
 Ledger: `domain/supply_chain.py`
-Exercise: `python3 -m domain.supply_chain`
+Exercise: `python3 -m domain.platform`
 
 When invoked:
 
@@ -19,4 +19,4 @@ When invoked:
 6. An outcome and a settlement both require a fulfillment. Trace a fulfillment back to its batches, lots, and ingredients.
 7. Each stage `entry` is the owner checkout's command script (`chain_stage.py` or `chain_stage.mjs`). The ledger calls that script and records the step only when the owner accepts it. Do not invent a second chain of custody beside the entry.
 
-Stage owners today: ingredient specify/source/procure in `skinsource-pro`, formulas in `skinform`, batch genealogy in this hub until a plant service exists, catalog and fulfillment in `skintwin-customer-portal`, salon distribution in `skintwin-salon`, practitioner certificates in `regima-training-lms`, settlement in `skintwin-integrations`, skin outcomes in `skintwin`.
+Stage owners today: ingredient specify/source/procure in `skinsource-pro`, formulas and batches in `skinform`, catalog and fulfillment in `skintwin-customer-portal`, salon distribution in `skintwin-salon`, practitioner certificates in `regima-training-lms`, settlement in `skintwin-integrations`, skin outcomes in `skintwin`. The hub ledger stores the genealogy.

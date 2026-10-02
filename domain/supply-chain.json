@@ -26,10 +26,10 @@
     },
     {
       "id": "manufacture",
-      "owner": "skintwin-ecosystem-design",
+      "owner": "skinform",
       "artifact": "batch",
-      "entry": "domain/manufacture_stage.py",
-      "note": "No sibling records batch genealogy. This ledger is the system of record until a plant service exists."
+      "entry": "chain_stage.mjs",
+      "note": "Skinform releases a batch from a formula and lot allocations. The hub ledger stores the genealogy."
     },
     {
       "id": "catalog",
