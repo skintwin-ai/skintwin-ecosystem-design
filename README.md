@@ -7,7 +7,7 @@ This repository contains the comprehensive ecosystem design for the **skintwin-a
 This hub is the versioned Cloud Agent environment for org-wide work. Start Cloud Agent runs from this repository so `.cursor/environment.json` loads.
 
 - Domain registry: [`domain/org-ecosystem.json`](./domain/org-ecosystem.json)
-- Supply chain: [`domain/supply-chain.json`](./domain/supply-chain.json) (`python3 -m domain.platform`)
+- Supply chain: [`domain/supply-chain.json`](./domain/supply-chain.json), [`domain/operations.json`](./domain/operations.json) (`python3 -m domain.platform`), and [`domain/metagraph.json`](./domain/metagraph.json) (`python3 -m domain.metagraph`)
 - Install script: [`scripts/cloud-agent-install.sh`](./scripts/cloud-agent-install.sh)
 - Inventory consumer: `python3 -m domain.inventory`
 - Rendered inventory: [`analysis/repository_analysis.md`](./analysis/repository_analysis.md)

@@ -2,6 +2,7 @@
 // Stage owners load this module. Search roots and the ledger path stay in the
 // domain JSON files.
 
+const { spawnSync } = require("node:child_process");
 const { existsSync, readFileSync } = require("node:fs");
 const { dirname, join, resolve } = require("node:path");
 
@@ -84,6 +85,35 @@ function checkout(name) {
   return null;
 }
 
+function commitCommand(request) {
+  return commitCommands([request]);
+}
+
+function commitCommands(requests) {
+  const hub = hubRoot();
+  if (!hub || !process.env.SKINTWIN_CHAIN_LEDGER) {
+    return { ok: false, error: "supply-chain hub is not present" };
+  }
+  if (!Array.isArray(requests)) {
+    return { ok: false, error: "commands must be a list" };
+  }
+  const child = spawnSync("python3", ["-m", "domain.ledger"], {
+    cwd: hub,
+    input: JSON.stringify({ commands: requests }),
+    encoding: "utf8",
+  });
+  if (child.status !== 0) {
+    let message = child.stderr;
+    try {
+      message = JSON.parse(child.stdout || "{}").error || message;
+    } catch {
+      message = message || "ledger rejected the command";
+    }
+    return { ok: false, error: message || "ledger rejected the command" };
+  }
+  return { ok: true };
+}
+
 function stageEntry(stageId) {
   const hub = hubRoot();
   if (!hub) return null;
@@ -98,6 +128,8 @@ function stageEntry(stageId) {
 module.exports = {
   bindLedger,
   checkout,
+  commitCommand,
+  commitCommands,
   hubRoot,
   ledgerFile,
   moduleHub,
