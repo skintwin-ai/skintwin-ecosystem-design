@@ -481,6 +481,26 @@ class SupplyChainTests(unittest.TestCase):
         capped = replenishment_commands(short, "replenish-short")
         self.assertEqual(capped[0]["args"]["destination"], "cape-town")
         self.assertEqual(capped[0]["args"]["milligrams"], 2_500)
+        self.assertEqual(capped[0]["args"]["transfer_id"], "replenish:replenish-short:0")
+        partial = short
+        for command in capped:
+            args = command["args"]
+            partial = partial.transfer(
+                args["transfer_id"],
+                args["sku_id"],
+                args["batch_id"],
+                args["source"],
+                args["destination"],
+                args["milligrams"],
+            )
+        refilled = partial.transfer(
+            "xfer-back", "sku-serum-c", "batch-1", "johannesburg", PLANT, 4_500
+        )
+        self.assertEqual(replenishment_commands(refilled, "replenish-short"), [])
+        follow = replenishment_commands(refilled, "another-shipment")
+        self.assertEqual(follow[0]["args"]["destination"], "cape-town")
+        self.assertEqual(follow[0]["args"]["milligrams"], 4_500)
+        self.assertEqual(follow[0]["args"]["transfer_id"], "replenish:another-shipment:0")
         assert retail.connect is not None and treatment.connect is not None
         self.assertEqual(retail.connect.destination_role, "Outlet")
         self.assertEqual(retail.connect.platform_fee_cents, 462)
