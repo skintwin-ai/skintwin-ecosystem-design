@@ -243,9 +243,10 @@ class SupplyChainTests(unittest.TestCase):
         )
         self.assertEqual(chain.balance("sku-serum-c", "batch-1", PLANT), 3_500)
         self.assertEqual(chain.balance("sku-serum-c", "batch-1", "cape-town"), 10_500)
-        from domain.metagraph import replenishment_commands
+        from domain.metagraph import project, replenishment_commands
 
         self.assertEqual(replenishment_commands(chain, "replenish-outlets"), [])
+        self.assertEqual(project(chain).logistics, ())
         self.assertEqual(chain.package_remaining("lot-bottle"), 2)
         self.assertEqual(chain.package_remaining("lot-tube"), 2)
         from domain.metagraph import project

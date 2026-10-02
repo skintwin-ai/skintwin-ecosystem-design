@@ -207,6 +207,8 @@ def project(chain: Chain, document: Document | None = None) -> Bowtie:
                 _connect(chain, fulfillment, templates),
             )
         )
+    from domain.platform import replenishment_shipment
+
     plan = tuple(
         (
             item["args"]["sku_id"],
@@ -214,7 +216,7 @@ def project(chain: Chain, document: Document | None = None) -> Bowtie:
             item["args"]["destination"],
             item["args"]["milligrams"],
         )
-        for item in replenishment_commands(chain, "logistics")
+        for item in replenishment_commands(chain, replenishment_shipment())
     )
     return Bowtie(tuple(sales), plan)
 
