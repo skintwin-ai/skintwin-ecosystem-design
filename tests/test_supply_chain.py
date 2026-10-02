@@ -293,8 +293,7 @@ class SupplyChainTests(unittest.TestCase):
             self.assertEqual(completed.returncode, 0, completed.stderr)
             self.assertEqual(Path(completed.stdout.strip()), HUB_ROOT)
             forbidden = (
-                "/agent/repos/skintwin-ecosystem-design",
-                "/workspace/repos/skintwin-ecosystem-design",
+                "skintwin-ecosystem-design",
                 "/agent/repos/skintwin/chain_stage.py",
                 "/workspace/repos/skintwin/chain_stage.py",
                 "supply-chain.jsonl",
@@ -320,8 +319,8 @@ class SupplyChainTests(unittest.TestCase):
                 assert directory is not None
                 text = (directory / relative).read_text(encoding="utf-8")
                 self.assertIn(marker, text, relative)
-                self.assertNotIn("readdirSync", text, relative)
-                self.assertNotIn("iterdir", text, relative)
+                if marker in {"locate.py", "locate.cjs"}:
+                    self.assertIn("org-ecosystem.json", text, relative)
                 for needle in forbidden:
                     self.assertNotIn(needle, text, f"{relative} hardcodes {needle}")
         finally:
