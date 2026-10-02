@@ -94,6 +94,32 @@ def load_products(path: Path | None = None) -> tuple[ProductWalk, ...]:
     return tuple(loaded)
 
 
+def replenishment_shipments(path: Path | None = None) -> tuple[str, ...]:
+    """Shipment ids the operations document uses to replace outlet sales."""
+    found: list[str] = []
+    for product in load_products(path):
+        for stage_id, args in product.calls:
+            if stage_id != "distribute" or len(args) < 2:
+                continue
+            marker = args[1]
+            if not isinstance(marker, dict) or marker.get("replenish") is not True:
+                continue
+            shipment = args[0]
+            if not isinstance(shipment, str) or not shipment.strip():
+                continue
+            shipment = shipment.strip()
+            if shipment not in found:
+                found.append(shipment)
+    if not found:
+        raise ChainError("operations must name a replenishment shipment")
+    return tuple(found)
+
+
+def replenishment_shipment(path: Path | None = None) -> str:
+    """The shipment id the operations document uses to replace outlet sales."""
+    return replenishment_shipments(path)[0]
+
+
 def owner_runner(command: str) -> list[str]:
     stage_id = COMMAND_STAGE[command]
     registry = load_registry()

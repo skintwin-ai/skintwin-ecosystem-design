@@ -469,6 +469,10 @@ class Chain:
         if source == destination:
             raise ChainError("transfer source and destination must differ")
         _positive(milligrams, "transfer milligrams")
+        # Manufacture, fulfillment, and return already occupy movement refs.
+        # A second transfer with the same ref would move that stock again.
+        if any(movement.ref == transfer_id for movement in self.movements):
+            raise ChainError(f"id {transfer_id} already exists")
         self._sku(sku_id)
         self._batch(batch_id)
         if self._batch(batch_id).sku_id != sku_id:
