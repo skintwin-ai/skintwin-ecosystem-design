@@ -86,12 +86,13 @@ def verify_surfaces(registry=None) -> None:
     """Each stage names the product file that records it. That file must exist."""
     loaded = registry or load_registry()
     for stage in load_stages(loaded):
-        if stage.owner == loaded.hub.name:
+        holder = stage.surface_owner or stage.owner
+        if holder == loaded.hub.name:
             path = HUB_ROOT / stage.surface
         else:
-            checkout = find_repo(stage.owner, loaded)
+            checkout = find_repo(holder, loaded)
             if checkout is None:
-                raise ChainError(f"{stage.owner} checkout is not present for {stage.id}")
+                raise ChainError(f"{holder} checkout is not present for {stage.id}")
             path = checkout / stage.surface
         if not path.is_file():
             raise ChainError(f"{stage.id}: surface {stage.surface} is missing")

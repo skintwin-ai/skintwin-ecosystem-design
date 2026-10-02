@@ -386,6 +386,16 @@ def write_analysis(path: Path | None = None, registry: Registry | None = None) -
     return target
 
 
+def _supply_chain_lines() -> list[str]:
+    from domain.supply_chain import load_stages
+
+    lines = ["supply chain:"]
+    for stage in load_stages():
+        recorded_by = stage.surface_owner or stage.owner
+        lines.append(f"  {stage.id}: {stage.owner} recorded by {recorded_by}/{stage.surface}")
+    return lines
+
+
 def format_report(report: InventoryReport) -> str:
     lines = [
         f"hub: {report.hub_name}"
@@ -397,6 +407,7 @@ def format_report(report: InventoryReport) -> str:
         f"cpu-core kind drift: {', '.join(report.kind_drift) or 'none'}",
         f"checkout-only with install markers: {', '.join(report.checkout_only_installable) or 'none'}",
         f"unregistered: {', '.join(report.unregistered) or 'none'}",
+        *_supply_chain_lines(),
         "",
         _md_table(
             ("Repository", "Role", "Kind", "Discoverable", "Kind drift", "Observed"),

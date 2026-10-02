@@ -50,6 +50,9 @@ class SupplyChainTests(unittest.TestCase):
         self.assertIn("skintwin", owners)
         manufacture = next(stage for stage in self.stages if stage.id == "manufacture")
         self.assertEqual(manufacture.owner, "skinform")
+        outcome = next(stage for stage in self.stages if stage.id == "outcome")
+        self.assertEqual(outcome.owner, "skintwin")
+        self.assertEqual(outcome.surface_owner, "skintwin-customer-portal")
         from domain.platform import verify_surfaces
 
         verify_surfaces(self.registry)

@@ -38,7 +38,7 @@
       "artifact": "batch",
       "entry": "chain_stage.mjs",
       "surface": "app/routes/api.supply-chain.ts",
-      "marker": "handleStage",
+      "marker": "manufactureBatch",
       "note": "Skinform releases a batch from a formula and lot allocations. The hub ledger stores the genealogy."
     },
     {
@@ -86,8 +86,9 @@
       "owner": "skintwin",
       "artifact": "skin-outcome",
       "entry": "chain_stage.py",
-      "surface": "chain_stage.py",
-      "marker": "record_outcome"
+      "surface_owner": "skintwin-customer-portal",
+      "surface": "server/routers.ts",
+      "marker": "recordSkinOutcome"
     }
   ]
 }
