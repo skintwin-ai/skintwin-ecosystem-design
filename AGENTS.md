@@ -4,6 +4,16 @@ This hub is the Cloud Agent entry for **org-wide skintwin-ai work**. Start those
 
 The canonical domain model is [`domain/org-ecosystem.json`](domain/org-ecosystem.json). Install kind, CPU-core vs checkout-only, skip-missing, frozen lockfiles, and hub-only constraints live there. Do not re-encode those decisions as new if/else in scripts or docs.
 
+Inventory and checkout drift are consumers of that registry:
+
+```
+python3 -m domain.inventory
+python3 -m domain.inventory --check-analysis
+python3 -m domain.inventory --write-analysis
+```
+
+`analysis/repository_analysis.md` is the rendered inventory. Do not hand-edit sibling rows. Observed lockfiles on checkout-only trees are not a role change.
+
 ## Sibling layout
 
 Search roots (override with `CLOUD_AGENT_REPO_ROOTS`, colon-separated):

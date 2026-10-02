@@ -1,5 +1,7 @@
 # SkinTwin Ecosystem Integration Mapping
 
+The Cloud Agent workspace snapshot is [`domain/org-ecosystem.json`](../domain/org-ecosystem.json) (hub plus 40 siblings). Refresh the sibling inventory with `python3 -m domain.inventory --write-analysis`. `directory-template` / `business-directory-template` in the historical matrix below is an org repo **outside** that snapshot; the in-snapshot directory product is `skincare-directory`.
+
 ## Repository Relationship Matrix
 
 The following matrix illustrates the dependencies and integration points between repositories in the SkinTwin ecosystem. Each cell indicates the nature of the relationship between the row repository (consumer) and column repository (provider).
