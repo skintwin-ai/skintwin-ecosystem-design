@@ -1,0 +1,71 @@
+{
+  "stages": [
+    {
+      "id": "specify",
+      "owner": "skinsource-pro",
+      "artifact": "ingredient",
+      "entry": "chain_stage.py"
+    },
+    {
+      "id": "source",
+      "owner": "skinsource-pro",
+      "artifact": "supplier-qualification",
+      "entry": "chain_stage.py"
+    },
+    {
+      "id": "procure",
+      "owner": "skinsource-pro",
+      "artifact": "ingredient-lot",
+      "entry": "chain_stage.py"
+    },
+    {
+      "id": "formulate",
+      "owner": "skinform",
+      "artifact": "formula",
+      "entry": "chain_stage.mjs"
+    },
+    {
+      "id": "manufacture",
+      "owner": "skinform",
+      "artifact": "batch",
+      "entry": "chain_stage.mjs",
+      "note": "Skinform releases a batch from a formula and lot allocations. The hub ledger stores the genealogy."
+    },
+    {
+      "id": "catalog",
+      "owner": "skintwin-customer-portal",
+      "artifact": "sku",
+      "entry": "chain_stage.mjs"
+    },
+    {
+      "id": "distribute",
+      "owner": "skintwin-salon",
+      "artifact": "location-stock",
+      "entry": "chain_stage.mjs"
+    },
+    {
+      "id": "certify",
+      "owner": "regima-training-lms",
+      "artifact": "practitioner-certificate",
+      "entry": "chain_stage.mjs"
+    },
+    {
+      "id": "fulfill",
+      "owner": "skintwin-customer-portal",
+      "artifact": "fulfillment",
+      "entry": "chain_stage.mjs"
+    },
+    {
+      "id": "account",
+      "owner": "skintwin-integrations",
+      "artifact": "settlement",
+      "entry": "chain_stage.py"
+    },
+    {
+      "id": "outcome",
+      "owner": "skintwin",
+      "artifact": "skin-outcome",
+      "entry": "chain_stage.py"
+    }
+  ]
+}
