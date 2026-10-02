@@ -167,6 +167,10 @@ def _settle(chain: Chain, args: dict) -> Chain:
     )
 
 
+def _return_sale(chain: Chain, args: dict) -> Chain:
+    return chain.return_sale(args["return_id"], args["fulfillment_id"])
+
+
 def _outcome(chain: Chain, args: dict) -> Chain:
     return chain.record_outcome(
         args["outcome_id"],
@@ -187,6 +191,7 @@ _APPLY = {
     "transfer": _transfer,
     "certify_practitioner": _certify,
     "fulfill": _fulfill,
+    "return_sale": _return_sale,
     "settle": _settle,
     "record_outcome": _outcome,
 }

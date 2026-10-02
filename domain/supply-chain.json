@@ -123,6 +123,18 @@
       }
     },
     {
+      "id": "return",
+      "owner": "skintwin-customer-portal",
+      "artifact": "sale-return",
+      "entry": "chain_stage.mjs",
+      "surface": "server/routers.ts",
+      "marker": "acceptSaleReturn",
+      "invoke": {
+        "module": "chain_stage.mjs",
+        "function": "acceptSaleReturn"
+      }
+    },
+    {
       "id": "account",
       "owner": "skintwin-integrations",
       "artifact": "settlement",

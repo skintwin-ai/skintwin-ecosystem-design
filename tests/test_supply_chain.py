@@ -87,13 +87,22 @@ class SupplyChainTests(unittest.TestCase):
     def test_mass_is_conserved(self) -> None:
         finished = 21_000
         held = sum(movement.milligrams for movement in self.chain.movements)
-        fulfilled = sum(
+        returned_ids = {item.fulfillment_id for item in self.chain.returns}
+        outstanding = sum(
             draw.milligrams
             for fulfillment in self.chain.fulfillments
+            if fulfillment.id not in returned_ids
             for draw in fulfillment.draws
         )
-        self.assertEqual(held, finished - fulfilled)
-        self.assertEqual(fulfilled, 7_000)
+        self.assertEqual(held, finished - outstanding)
+        self.assertEqual(outstanding, 7_000)
+
+    def test_a_returned_sale_restores_outlet_stock(self) -> None:
+        self.assertEqual(self.chain.balance("sku-serum-c", "batch-1", "cape-town"), 3_500)
+        with self.assertRaises(ChainError):
+            self.chain.return_sale("return-again", "order-returned")
+        with self.assertRaises(ChainError):
+            self.chain.return_sale("return-missing", "missing-order")
 
     def test_unknown_owner_and_missing_stage_fail_to_load(self) -> None:
         data = json.loads(STAGES_JSON.read_text())
@@ -427,6 +436,7 @@ class SupplyChainTests(unittest.TestCase):
             (4, 21),
         )
         self.assertEqual(sum(sale.milligrams for sale in bowtie.sales), 7_000)
+        self.assertNotIn("order-returned", {sale.fulfillment_id for sale in bowtie.sales})
         self.assertEqual(
             sum(milligrams for *_rest, milligrams in bowtie.supplier_demand()),
             7_000,

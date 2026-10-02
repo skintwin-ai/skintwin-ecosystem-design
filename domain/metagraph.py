@@ -169,8 +169,11 @@ def project(chain: Chain, document: Document | None = None) -> Bowtie:
     packaging_by_formula: dict[str, list[PackagingSpec]] = {}
     for spec in loaded.packaging:
         packaging_by_formula.setdefault(spec.formula_id, []).append(spec)
+    returned = {item.fulfillment_id for item in chain.returns}
     sales: list[SaleLink] = []
     for fulfillment in chain.fulfillments:
+        if fulfillment.id in returned:
+            continue
         sku = chain._sku(fulfillment.sku_id)
         formula = chain._formula(sku.formula_id)
         sold = sum(draw.milligrams for draw in fulfillment.draws)
@@ -261,8 +264,9 @@ def replenishment_commands(chain: Chain, shipment_id: str) -> list[dict]:
     shipment_id = shipment_id.strip()
     prefix = f"{shipment_id}:"
     demand: dict[tuple[str, str, str], int] = {}
+    returned = {item.fulfillment_id for item in chain.returns}
     for fulfillment in chain.fulfillments:
-        if fulfillment.location == PLANT:
+        if fulfillment.id in returned or fulfillment.location == PLANT:
             continue
         for draw in fulfillment.draws:
             key = (fulfillment.sku_id, draw.batch_id, fulfillment.location)

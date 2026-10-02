@@ -29,6 +29,7 @@ COMMAND_STAGE = {
     "transfer": "distribute",
     "certify_practitioner": "certify",
     "fulfill": "fulfill",
+    "return_sale": "return",
     "settle": "account",
     "record_outcome": "outcome",
 }
@@ -174,6 +175,12 @@ class Outcome:
 
 
 @dataclass(frozen=True)
+class SaleReturn:
+    id: str
+    fulfillment_id: str
+
+
+@dataclass(frozen=True)
 class Chain:
     ingredients: tuple[Ingredient, ...] = ()
     qualifications: tuple[Qualification, ...] = ()
@@ -187,6 +194,7 @@ class Chain:
     settlements: tuple[Settlement, ...] = ()
     outcomes: tuple[Outcome, ...] = ()
     package_lots: tuple[PackageLot, ...] = ()
+    returns: tuple[SaleReturn, ...] = ()
 
     def specify_ingredient(self, ingredient_id: str, inci: str, cas: str) -> Chain:
         accepted = _accept(
@@ -620,6 +628,31 @@ class Chain:
             + (Outcome(outcome_id, fulfillment_id, concern, score),),
         )
 
+    def return_sale(self, return_id: str, fulfillment_id: str) -> Chain:
+        accepted = _accept(
+            "return_sale",
+            {"return_id": return_id, "fulfillment_id": fulfillment_id},
+        )
+        return_id = str(accepted["return_id"])
+        fulfillment_id = str(accepted["fulfillment_id"])
+        _fresh_id(return_id, self.returns)
+        fulfillment = self._fulfillment(fulfillment_id)
+        if any(item.fulfillment_id == fulfillment_id for item in self.returns):
+            raise ChainError(f"fulfillment {fulfillment_id} is already returned")
+        updated = self
+        for draw in fulfillment.draws:
+            updated = updated._move(
+                fulfillment.sku_id,
+                draw.batch_id,
+                fulfillment.location,
+                draw.milligrams,
+                return_id,
+            )
+        return replace(
+            updated,
+            returns=updated.returns + (SaleReturn(return_id, fulfillment_id),),
+        )
+
     def lot_remaining(self, lot_id: str) -> int:
         lot = self._lot(lot_id)
         used = sum(
@@ -864,9 +897,13 @@ def reference_serum() -> Chain:
     chain = chain.settle("pay-retail", "order-retail", 18_500, "ZAR")
     chain = chain.settle("pay-treatment", "order-treatment", 45_000, "ZAR")
     chain = chain.record_outcome("outcome-retail", "order-retail", "dullness", 72)
-    return chain.record_outcome(
+    chain = chain.record_outcome(
         "outcome-treatment", "order-treatment", "pigmentation", 81
     )
+    chain = chain.fulfill(
+        "order-returned", "sku-serum-c", "cape-town", 1_000, "retail"
+    )
+    return chain.return_sale("return-retail", "order-returned")
 
 
 def format_trace(chain: Chain, fulfillment_id: str) -> str:

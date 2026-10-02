@@ -64,6 +64,7 @@
     { "stage": "distribute", "type": "Logistics", "side": "center" },
     { "stage": "certify", "type": "Practitioner", "side": "demand" },
     { "stage": "fulfill", "type": "Demand", "side": "demand" },
+    { "stage": "return", "type": "ProductSale", "side": "demand" },
     { "stage": "account", "type": "Platform", "side": "center" },
     { "stage": "outcome", "type": "Treatment", "side": "demand" }
   ]

@@ -183,6 +183,14 @@
           "args": [{ "outcomeId": "outcome-cleanser", "fulfillmentId": "order-cleanser:0:sku-cleanser", "concern": "dryness", "score": 64 }]
         },
         {
+          "stage": "fulfill",
+          "args": ["order-returned", [{ "sku": "sku-cleanser", "location": "johannesburg", "milligrams": 1000 }]]
+        },
+        {
+          "stage": "return",
+          "args": ["return-cleanser", "order-returned:0:sku-cleanser"]
+        },
+        {
           "stage": "distribute",
           "args": ["replenish-outlets", { "replenish": true }]
         }
