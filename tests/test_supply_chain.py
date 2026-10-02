@@ -285,6 +285,8 @@ class SupplyChainTests(unittest.TestCase):
                 assert directory is not None
                 text = (directory / relative).read_text(encoding="utf-8")
                 self.assertIn(marker, text, relative)
+                self.assertNotIn("readdirSync", text, relative)
+                self.assertNotIn("iterdir", text, relative)
                 for needle in forbidden:
                     self.assertNotIn(needle, text, f"{relative} hardcodes {needle}")
         finally:

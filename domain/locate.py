@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 from typing import Mapping
@@ -68,6 +69,28 @@ def checkout(name: str) -> Path | None:
         if directory.is_dir() and any((directory / marker).is_file() for marker in MARKER_FILES):
             return directory
     return None
+
+
+def commit_command(request: dict) -> str | None:
+    """Append one accepted command. Return an error string when the ledger rejects it."""
+    hub = find_hub()
+    if hub is None or not os.environ.get("SKINTWIN_CHAIN_LEDGER"):
+        return "supply-chain hub is not present"
+    completed = subprocess.run(
+        [sys.executable, "-m", "domain.ledger"],
+        input=json.dumps(request),
+        text=True,
+        capture_output=True,
+        cwd=hub,
+        check=False,
+    )
+    if completed.returncode == 0:
+        return None
+    try:
+        message = json.loads(completed.stdout or "{}").get("error")
+    except json.JSONDecodeError:
+        message = None
+    return str(message or completed.stderr or "ledger rejected the command")
 
 
 def stage_entry(stage_id: str) -> Path | None:
