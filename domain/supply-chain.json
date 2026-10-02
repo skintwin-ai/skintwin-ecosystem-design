@@ -31,7 +31,7 @@
       "artifact": "ingredient-lot",
       "entry": "chain_stage.py",
       "surface": "backend/src/routes/procurement.py",
-      "marker": "record_received_lot",
+      "marker": "completed_procurement_receipt",
       "invoke": {
         "module": "backend/src/chain_commands.py",
         "function": "record_received_lot"
@@ -43,7 +43,7 @@
       "artifact": "packaging-lot",
       "entry": "chain_stage.py",
       "surface": "backend/src/routes/procurement.py",
-      "marker": "record_received_package",
+      "marker": "completed_procurement_receipt",
       "invoke": {
         "module": "backend/src/chain_commands.py",
         "function": "record_received_package"
@@ -92,7 +92,7 @@
       "artifact": "location-stock",
       "entry": "chain_stage.mjs",
       "surface": "src/api/appointments/create.js",
-      "marker": "recordDeliveries",
+      "marker": "recordSyncedDelivery",
       "invoke": {
         "module": "chain_stage.mjs",
         "function": "recordDeliveries"
