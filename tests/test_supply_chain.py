@@ -141,6 +141,28 @@ class SupplyChainTests(unittest.TestCase):
         with self.assertRaises(ChainError):
             self.chain.settle("again", "order-retail", 100, "ZAR")
 
+    def test_owner_entries_reject_bad_payloads_and_run_the_serum(self) -> None:
+        from domain import dispatch
+
+        calls: list[str] = []
+        real = dispatch.accept
+
+        def wrapped(command: str, args: dict) -> dict:
+            calls.append(command)
+            return real(command, args)
+
+        dispatch.accept = wrapped
+        try:
+            with self.assertRaises(ChainError):
+                Chain().specify_ingredient("water", "Aqua", "not-a-cas")
+            walked = reference_serum()
+        finally:
+            dispatch.accept = real
+        self.assertEqual(walked.trace("order-treatment")["outcome"], 81)
+        self.assertEqual(set(calls), set(COMMAND_STAGE))
+        for stage in self.stages:
+            self.assertTrue(stage.entry.endswith((".py", ".mjs")))
+
 
 if __name__ == "__main__":
     unittest.main()

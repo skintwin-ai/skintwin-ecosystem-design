@@ -42,6 +42,7 @@ class Stage:
     id: str
     owner: str
     artifact: str
+    entry: str
     note: str = ""
 
 
@@ -165,6 +166,13 @@ class Chain:
     outcomes: tuple[Outcome, ...] = ()
 
     def specify_ingredient(self, ingredient_id: str, inci: str, cas: str) -> Chain:
+        accepted = _accept(
+            "specify_ingredient",
+            {"ingredient_id": ingredient_id, "inci": inci, "cas": cas},
+        )
+        ingredient_id = str(accepted["ingredient_id"])
+        inci = str(accepted["inci"])
+        cas = str(accepted["cas"])
         _fresh_id(ingredient_id, self.ingredients)
         inci = _text(inci, "inci")
         cas = _text(cas, "cas")
@@ -176,6 +184,17 @@ class Chain:
     def qualify_supplier(
         self, qualification_id: str, supplier_name: str, ingredient_id: str
     ) -> Chain:
+        accepted = _accept(
+            "qualify_supplier",
+            {
+                "qualification_id": qualification_id,
+                "supplier_name": supplier_name,
+                "ingredient_id": ingredient_id,
+            },
+        )
+        qualification_id = str(accepted["qualification_id"])
+        supplier_name = str(accepted["supplier_name"])
+        ingredient_id = str(accepted["ingredient_id"])
         _fresh_id(qualification_id, self.qualifications)
         self._ingredient(ingredient_id)
         supplier_name = _text(supplier_name, "supplier_name")
@@ -192,6 +211,19 @@ class Chain:
         qualification_id: str,
         milligrams: int,
     ) -> Chain:
+        accepted = _accept(
+            "receive_lot",
+            {
+                "lot_id": lot_id,
+                "ingredient_id": ingredient_id,
+                "qualification_id": qualification_id,
+                "milligrams": milligrams,
+            },
+        )
+        lot_id = str(accepted["lot_id"])
+        ingredient_id = str(accepted["ingredient_id"])
+        qualification_id = str(accepted["qualification_id"])
+        milligrams = int(accepted["milligrams"])
         _fresh_id(lot_id, self.lots)
         _positive(milligrams, "lot milligrams")
         qualification = self._qualification(qualification_id)
@@ -211,6 +243,17 @@ class Chain:
         name: str,
         lines: Sequence[tuple[str, int]],
     ) -> Chain:
+        accepted = _accept(
+            "define_formula",
+            {
+                "formula_id": formula_id,
+                "name": name,
+                "lines": [list(line) for line in lines],
+            },
+        )
+        formula_id = str(accepted["formula_id"])
+        name = str(accepted["name"])
+        lines = tuple((str(line[0]), int(line[1])) for line in accepted["lines"])
         _fresh_id(formula_id, self.formulas)
         name = _text(name, "formula name")
         if not lines:
@@ -230,6 +273,13 @@ class Chain:
         )
 
     def catalog_sku(self, sku_id: str, formula_id: str, name: str) -> Chain:
+        accepted = _accept(
+            "catalog_sku",
+            {"sku_id": sku_id, "formula_id": formula_id, "name": name},
+        )
+        sku_id = str(accepted["sku_id"])
+        formula_id = str(accepted["formula_id"])
+        name = str(accepted["name"])
         _fresh_id(sku_id, self.skus)
         self._formula(formula_id)
         name = _text(name, "sku name")
@@ -242,6 +292,21 @@ class Chain:
         units: int,
         allocations: Sequence[tuple[str, str, int]],
     ) -> Chain:
+        accepted = _accept(
+            "manufacture",
+            {
+                "batch_id": batch_id,
+                "sku_id": sku_id,
+                "units": units,
+                "allocations": [list(item) for item in allocations],
+            },
+        )
+        batch_id = str(accepted["batch_id"])
+        sku_id = str(accepted["sku_id"])
+        units = int(accepted["units"])
+        allocations = tuple(
+            (str(item[0]), str(item[1]), int(item[2])) for item in accepted["allocations"]
+        )
         _fresh_id(batch_id, self.batches)
         _positive(units, "units")
         sku = self._sku(sku_id)
@@ -294,6 +359,23 @@ class Chain:
         destination: str,
         milligrams: int,
     ) -> Chain:
+        accepted = _accept(
+            "transfer",
+            {
+                "transfer_id": transfer_id,
+                "sku_id": sku_id,
+                "batch_id": batch_id,
+                "source": source,
+                "destination": destination,
+                "milligrams": milligrams,
+            },
+        )
+        transfer_id = str(accepted["transfer_id"])
+        sku_id = str(accepted["sku_id"])
+        batch_id = str(accepted["batch_id"])
+        source = str(accepted["source"])
+        destination = str(accepted["destination"])
+        milligrams = int(accepted["milligrams"])
         _text(transfer_id, "transfer id")
         _text(source, "source")
         _text(destination, "destination")
@@ -310,6 +392,17 @@ class Chain:
     def certify_practitioner(
         self, certificate_id: str, practitioner_id: str, course: str
     ) -> Chain:
+        accepted = _accept(
+            "certify_practitioner",
+            {
+                "certificate_id": certificate_id,
+                "practitioner_id": practitioner_id,
+                "course": course,
+            },
+        )
+        certificate_id = str(accepted["certificate_id"])
+        practitioner_id = str(accepted["practitioner_id"])
+        course = str(accepted["course"])
         _fresh_id(certificate_id, self.certificates)
         practitioner_id = _text(practitioner_id, "practitioner_id")
         course = _text(course, "course")
@@ -328,6 +421,23 @@ class Chain:
         kind: FulfillmentKind,
         practitioner_id: str | None = None,
     ) -> Chain:
+        accepted = _accept(
+            "fulfill",
+            {
+                "fulfillment_id": fulfillment_id,
+                "sku_id": sku_id,
+                "location": location,
+                "milligrams": milligrams,
+                "kind": kind,
+                "practitioner_id": practitioner_id,
+            },
+        )
+        fulfillment_id = str(accepted["fulfillment_id"])
+        sku_id = str(accepted["sku_id"])
+        location = str(accepted["location"])
+        milligrams = int(accepted["milligrams"])
+        kind = accepted["kind"]
+        practitioner_id = accepted.get("practitioner_id")
         _fresh_id(fulfillment_id, self.fulfillments)
         _text(location, "location")
         _positive(milligrams, "fulfillment milligrams")
@@ -368,6 +478,19 @@ class Chain:
         amount_cents: int,
         currency: str,
     ) -> Chain:
+        accepted = _accept(
+            "settle",
+            {
+                "settlement_id": settlement_id,
+                "fulfillment_id": fulfillment_id,
+                "amount_cents": amount_cents,
+                "currency": currency,
+            },
+        )
+        settlement_id = str(accepted["settlement_id"])
+        fulfillment_id = str(accepted["fulfillment_id"])
+        amount_cents = int(accepted["amount_cents"])
+        currency = str(accepted["currency"])
         _fresh_id(settlement_id, self.settlements)
         self._fulfillment(fulfillment_id)
         if any(item.fulfillment_id == fulfillment_id for item in self.settlements):
@@ -392,6 +515,19 @@ class Chain:
     def record_outcome(
         self, outcome_id: str, fulfillment_id: str, concern: str, score: int
     ) -> Chain:
+        accepted = _accept(
+            "record_outcome",
+            {
+                "outcome_id": outcome_id,
+                "fulfillment_id": fulfillment_id,
+                "concern": concern,
+                "score": score,
+            },
+        )
+        outcome_id = str(accepted["outcome_id"])
+        fulfillment_id = str(accepted["fulfillment_id"])
+        concern = str(accepted["concern"])
+        score = int(accepted["score"])
         _fresh_id(outcome_id, self.outcomes)
         self._fulfillment(fulfillment_id)
         if any(item.fulfillment_id == fulfillment_id for item in self.outcomes):
@@ -539,6 +675,7 @@ def load_stages(
         stage_id = _text(str(raw.get("id", "")), "stage id")
         owner = _text(str(raw.get("owner", "")), "stage owner")
         artifact = _text(str(raw.get("artifact", "")), "stage artifact")
+        entry = _text(str(raw.get("entry", "")), "stage entry")
         note = raw.get("note") or ""
         if not isinstance(note, str):
             raise ChainError(f"{stage_id}: note must be a string")
@@ -550,7 +687,7 @@ def load_stages(
             raise ChainError(f"{stage_id}: owner {owner} is not a known repository")
         seen_ids.add(stage_id)
         seen_artifacts.add(artifact)
-        stages.append(Stage(stage_id, owner, artifact, note))
+        stages.append(Stage(stage_id, owner, artifact, entry, note))
     commanded = set(COMMAND_STAGE.values())
     if seen_ids != commanded:
         missing = commanded - seen_ids
@@ -625,6 +762,12 @@ def main() -> None:
     print(format_trace(chain, "order-retail"))
     print("---")
     print(format_trace(chain, "order-treatment"))
+
+
+def _accept(command: str, args: dict[str, Any]) -> dict[str, Any]:
+    from domain.dispatch import accept
+
+    return accept(command, args)
 
 
 def _text(value: str | None, label: str) -> str:
