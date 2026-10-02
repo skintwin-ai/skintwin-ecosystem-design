@@ -160,6 +160,42 @@ class SupplyChainTests(unittest.TestCase):
             )
         self.assertEqual(self.chain.package_remaining("lot-bottle"), 2)
 
+    def test_a_transfer_id_moves_stock_once(self) -> None:
+        plant = self.chain.balance("sku-serum-c", "batch-1", PLANT)
+        cape = self.chain.balance("sku-serum-c", "batch-1", "cape-town")
+        with self.assertRaises(ChainError) as replayed:
+            self.chain.transfer(
+                "xfer-cape-town",
+                "sku-serum-c",
+                "batch-1",
+                PLANT,
+                "cape-town",
+                1_000,
+            )
+        self.assertIn("already exists", str(replayed.exception))
+        with self.assertRaises(ChainError) as occupied:
+            self.chain.transfer(
+                "batch-1",
+                "sku-serum-c",
+                "batch-1",
+                PLANT,
+                "johannesburg",
+                1_000,
+            )
+        self.assertIn("already exists", str(occupied.exception))
+        self.assertEqual(self.chain.balance("sku-serum-c", "batch-1", PLANT), plant)
+        self.assertEqual(self.chain.balance("sku-serum-c", "batch-1", "cape-town"), cape)
+        moved = self.chain.transfer(
+            "xfer-johannesburg",
+            "sku-serum-c",
+            "batch-1",
+            PLANT,
+            "johannesburg",
+            1_000,
+        )
+        self.assertEqual(moved.balance("sku-serum-c", "batch-1", PLANT), plant - 1_000)
+        self.assertEqual(moved.balance("sku-serum-c", "batch-1", "johannesburg"), 1_000)
+
     def test_treatment_requires_a_certificate_and_outcome_requires_fulfillment(self) -> None:
         bare = Chain()
         with self.assertRaises(ChainError):
