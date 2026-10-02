@@ -22,6 +22,7 @@ COMMAND_STAGE = {
     "specify_ingredient": "specify",
     "qualify_supplier": "source",
     "receive_lot": "procure",
+    "receive_package": "package",
     "define_formula": "formulate",
     "manufacture": "manufacture",
     "catalog_sku": "catalog",
@@ -74,6 +75,21 @@ class Lot:
 
 
 @dataclass(frozen=True)
+class PackageLot:
+    id: str
+    component_id: str
+    name: str
+    supplier_name: str
+    pieces: int
+
+
+@dataclass(frozen=True)
+class PackageUse:
+    lot_id: str
+    pieces: int
+
+
+@dataclass(frozen=True)
 class FormulaLine:
     ingredient_id: str
     mg_per_unit: int
@@ -106,6 +122,7 @@ class Batch:
     formula_id: str
     units: int
     consumptions: tuple[Consumption, ...]
+    packages: tuple[PackageUse, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -169,6 +186,7 @@ class Chain:
     fulfillments: tuple[Fulfillment, ...] = ()
     settlements: tuple[Settlement, ...] = ()
     outcomes: tuple[Outcome, ...] = ()
+    package_lots: tuple[PackageLot, ...] = ()
 
     def specify_ingredient(self, ingredient_id: str, inci: str, cas: str) -> Chain:
         accepted = _accept(
@@ -242,6 +260,40 @@ class Chain:
             + (Lot(lot_id, ingredient_id, qualification_id, milligrams),),
         )
 
+    def receive_package(
+        self,
+        component_id: str,
+        name: str,
+        lot_id: str,
+        supplier_name: str,
+        pieces: int,
+    ) -> Chain:
+        accepted = _accept(
+            "receive_package",
+            {
+                "component_id": component_id,
+                "name": name,
+                "lot_id": lot_id,
+                "supplier_name": supplier_name,
+                "pieces": pieces,
+            },
+        )
+        component_id = str(accepted["component_id"])
+        name = str(accepted["name"])
+        lot_id = str(accepted["lot_id"])
+        supplier_name = str(accepted["supplier_name"])
+        pieces = int(accepted["pieces"])
+        _fresh_id(lot_id, self.package_lots)
+        _text(component_id, "component_id")
+        _text(name, "package name")
+        _text(supplier_name, "supplier_name")
+        _positive(pieces, "pieces")
+        return replace(
+            self,
+            package_lots=self.package_lots
+            + (PackageLot(lot_id, component_id, name, supplier_name, pieces),),
+        )
+
     def define_formula(
         self,
         formula_id: str,
@@ -296,6 +348,7 @@ class Chain:
         sku_id: str,
         units: int,
         allocations: Sequence[tuple[str, str, int]],
+        packages: Sequence[tuple[str, str, int]] = (),
     ) -> Chain:
         accepted = _accept(
             "manufacture",
@@ -304,6 +357,7 @@ class Chain:
                 "sku_id": sku_id,
                 "units": units,
                 "allocations": [list(item) for item in allocations],
+                "packages": [list(item) for item in packages],
             },
         )
         batch_id = str(accepted["batch_id"])
@@ -311,6 +365,10 @@ class Chain:
         units = int(accepted["units"])
         allocations = tuple(
             (str(item[0]), str(item[1]), int(item[2])) for item in accepted["allocations"]
+        )
+        packages = tuple(
+            (str(item[0]), str(item[1]), int(item[2]))
+            for item in accepted.get("packages") or []
         )
         _fresh_id(batch_id, self.batches)
         _positive(units, "units")
@@ -344,12 +402,28 @@ class Chain:
                 raise ChainError(
                     f"lot {lot_id} has {remaining} mg, allocation needs {used} mg"
                 )
+        package_uses: list[PackageUse] = []
+        package_per_lot: dict[str, int] = {}
+        for component_id, lot_id, pieces in packages:
+            _positive(pieces, "package pieces")
+            package_lot = self._package_lot(lot_id)
+            if package_lot.component_id != component_id:
+                raise ChainError(f"package lot {lot_id} is not component {component_id}")
+            package_per_lot[lot_id] = package_per_lot.get(lot_id, 0) + pieces
+            package_uses.append(PackageUse(lot_id, pieces))
+        for lot_id, used in package_per_lot.items():
+            remaining = self.package_remaining(lot_id)
+            if used > remaining:
+                raise ChainError(
+                    f"package lot {lot_id} has {remaining} pieces, allocation needs {used}"
+                )
         batch = Batch(
             batch_id,
             sku_id,
             formula.id,
             units,
             tuple(consumptions),
+            tuple(package_uses),
         )
         finished = sum(required.values())
         updated = replace(self, batches=self.batches + (batch,))
@@ -556,6 +630,16 @@ class Chain:
         )
         return lot.milligrams - used
 
+    def package_remaining(self, lot_id: str) -> int:
+        lot = self._package_lot(lot_id)
+        used = sum(
+            use.pieces
+            for batch in self.batches
+            for use in batch.packages
+            if use.lot_id == lot_id
+        )
+        return lot.pieces - used
+
     def balance(self, sku_id: str, batch_id: str, location: str) -> int:
         return sum(
             movement.milligrams
@@ -644,6 +728,9 @@ class Chain:
 
     def _qualification(self, qualification_id: str) -> Qualification:
         return _find(self.qualifications, qualification_id, "qualification")
+
+    def _package_lot(self, lot_id: str) -> PackageLot:
+        return _find(self.package_lots, lot_id, "package lot")
 
     def _lot(self, lot_id: str) -> Lot:
         return _find(self.lots, lot_id, "lot")
@@ -737,6 +824,7 @@ def reference_serum() -> Chain:
     chain = chain.qualify_supplier("qual-hyaluronic", "Coastal Polymers", "hyaluronic")
     chain = chain.receive_lot("lot-ascorbic", "ascorbic", "qual-ascorbic", 50_000)
     chain = chain.receive_lot("lot-hyaluronic", "hyaluronic", "qual-hyaluronic", 5_000)
+    chain = chain.receive_package("bottle-30", "30 ml bottle", "lot-bottle", "Cape Glass", 4)
     chain = chain.define_formula(
         "serum-c",
         "Vitamin C serum",
@@ -751,6 +839,7 @@ def reference_serum() -> Chain:
             ("ascorbic", "lot-ascorbic", 20_000),
             ("hyaluronic", "lot-hyaluronic", 1_000),
         ),
+        (("bottle-30", "lot-bottle", 2),),
     )
     chain = chain.transfer(
         "xfer-cape-town",

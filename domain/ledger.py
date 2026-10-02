@@ -90,6 +90,16 @@ def _qualify(chain: Chain, args: dict) -> Chain:
     )
 
 
+def _receive_package(chain: Chain, args: dict) -> Chain:
+    return chain.receive_package(
+        args["component_id"],
+        args["name"],
+        args["lot_id"],
+        args["supplier_name"],
+        int(args["pieces"]),
+    )
+
+
 def _receive(chain: Chain, args: dict) -> Chain:
     return chain.receive_lot(
         args["lot_id"],
@@ -112,7 +122,12 @@ def _manufacture(chain: Chain, args: dict) -> Chain:
     allocations = tuple(
         (item[0], item[1], int(item[2])) for item in args["allocations"]
     )
-    return chain.manufacture(args["batch_id"], args["sku_id"], int(args["units"]), allocations)
+    packages = tuple(
+        (item[0], item[1], int(item[2])) for item in args.get("packages") or []
+    )
+    return chain.manufacture(
+        args["batch_id"], args["sku_id"], int(args["units"]), allocations, packages
+    )
 
 
 def _transfer(chain: Chain, args: dict) -> Chain:
@@ -165,6 +180,7 @@ _APPLY = {
     "specify_ingredient": _specify,
     "qualify_supplier": _qualify,
     "receive_lot": _receive,
+    "receive_package": _receive_package,
     "define_formula": _formula,
     "catalog_sku": _catalog,
     "manufacture": _manufacture,

@@ -38,6 +38,18 @@
       }
     },
     {
+      "id": "package",
+      "owner": "skinsource-pro",
+      "artifact": "packaging-lot",
+      "entry": "chain_stage.py",
+      "surface": "backend/src/routes/procurement.py",
+      "marker": "record_received_package",
+      "invoke": {
+        "module": "backend/src/chain_commands.py",
+        "function": "record_received_package"
+      }
+    },
+    {
       "id": "formulate",
       "owner": "skinform",
       "artifact": "formula",

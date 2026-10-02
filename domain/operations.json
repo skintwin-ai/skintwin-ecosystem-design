@@ -32,6 +32,10 @@
           "args": [{ "lot_id": "lot-hyaluronic", "ingredient_id": "hyaluronic", "qualification_id": "qual-hyaluronic", "quantity_kg": 0.005 }]
         },
         {
+          "stage": "package",
+          "args": [{ "component_id": "bottle-30", "name": "30 ml bottle", "lot_id": "lot-bottle", "supplier_name": "Cape Glass", "pieces": 4 }]
+        },
+        {
           "stage": "formulate",
           "args": [{
             "name": "Vitamin C serum",
@@ -53,7 +57,8 @@
             "batch_id": "batch-1",
             "sku_id": "sku-serum-c",
             "units": 2,
-            "allocations": [["ascorbic", "lot-ascorbic", 20000], ["hyaluronic", "lot-hyaluronic", 1000]]
+            "allocations": [["ascorbic", "lot-ascorbic", 20000], ["hyaluronic", "lot-hyaluronic", 1000]],
+            "packages": [["bottle-30", "lot-bottle", 2]]
           }]
         },
         {
@@ -124,6 +129,10 @@
           "args": [{ "lot_id": "lot-glycerin", "ingredient_id": "glycerin", "qualification_id": "qual-glycerin", "quantity_kg": 0.02 }]
         },
         {
+          "stage": "package",
+          "args": [{ "component_id": "tube-cleanser", "name": "Cleanser tube", "lot_id": "lot-tube", "supplier_name": "Joburg Tubes", "pieces": 3 }]
+        },
+        {
           "stage": "formulate",
           "args": [{
             "name": "Gentle cleanser",
@@ -142,7 +151,8 @@
             "batch_id": "batch-cleanser",
             "sku_id": "sku-cleanser",
             "units": 1,
-            "allocations": [["glycerin", "lot-glycerin", 8000]]
+            "allocations": [["glycerin", "lot-glycerin", 8000]],
+            "packages": [["tube-cleanser", "lot-tube", 1]]
           }]
         },
         {

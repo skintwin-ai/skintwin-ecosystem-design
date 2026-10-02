@@ -75,6 +75,7 @@ class PackagingDraw:
     component_id: str
     numerator: int
     denominator: int
+    supplier_name: str = ""
 
 
 @dataclass(frozen=True)
@@ -113,18 +114,17 @@ class Bowtie:
                 totals[key] = totals.get(key, 0) + draw.milligrams
         return tuple((*key, milligrams) for key, milligrams in sorted(totals.items()))
 
-    def packaging_demand(self) -> tuple[tuple[str, int, int], ...]:
-        """(component, numerator, denominator) in lowest terms."""
-        totals: dict[str, tuple[int, int]] = {}
+    def packaging_demand(self) -> tuple[tuple[str, str, int, int], ...]:
+        """(component, supplier, numerator, denominator) in lowest terms."""
+        totals: dict[tuple[str, str], tuple[int, int]] = {}
         for sale in self.sales:
             for draw in sale.packaging:
-                numer, denom = totals.get(draw.component_id, (0, 1))
-                totals[draw.component_id] = _add_fraction(
-                    numer, denom, draw.numerator, draw.denominator
-                )
+                key = (draw.component_id, draw.supplier_name)
+                numer, denom = totals.get(key, (0, 1))
+                totals[key] = _add_fraction(numer, denom, draw.numerator, draw.denominator)
         return tuple(
-            (component, numer, denom)
-            for component, (numer, denom) in sorted(totals.items())
+            (component, supplier, numer, denom)
+            for (component, supplier), (numer, denom) in sorted(totals.items())
             if numer
         )
 
@@ -179,10 +179,12 @@ def project(chain: Chain, document: Document | None = None) -> Bowtie:
                 f"{fulfillment.id} material demand {sum(item.milligrams for item in materials)} "
                 f"does not equal sale {sold}"
             )
-        unit = sum(line.mg_per_unit for line in formula.lines)
-        packs = tuple(
-            _pieces(spec, sold, unit)
-            for spec in packaging_by_formula.get(formula.id, ())
+        packs = _sale_packaging(
+            chain,
+            fulfillment,
+            formula,
+            sold,
+            packaging_by_formula.get(formula.id, []),
         )
         type_id = "Treatment" if fulfillment.kind == "treatment" else "ProductSale"
         if "Demand" not in ancestors(loaded, type_id):
@@ -216,8 +218,9 @@ def format_bowtie(bowtie: Bowtie) -> str:
                 f"  {draw.ingredient_id} {draw.supplier_name} {draw.milligrams} mg"
             )
         for pack in sale.packaging:
+            supplier = f" {pack.supplier_name}" if pack.supplier_name else ""
             lines.append(
-                f"  packaging {pack.component_id} {pack.numerator}/{pack.denominator}"
+                f"  packaging {pack.component_id}{supplier} {pack.numerator}/{pack.denominator}"
             )
         if sale.connect is not None:
             lines.append(
@@ -229,8 +232,8 @@ def format_bowtie(bowtie: Bowtie) -> str:
     for qualification, supplier, ingredient, milligrams in bowtie.supplier_demand():
         lines.append(f"  {supplier} {ingredient} {qualification} {milligrams} mg")
     lines.append("packaging demand:")
-    for component, numer, denom in bowtie.packaging_demand():
-        lines.append(f"  {component} {numer}/{denom}")
+    for component, supplier, numer, denom in bowtie.packaging_demand():
+        lines.append(f"  {supplier} {component} {numer}/{denom}")
     return "\n".join(lines)
 
 
@@ -279,6 +282,31 @@ def _attribute(draw: int, consumptions: list[int], finished: int) -> list[int]:
     if leftover != 0:
         raise MetagraphError("material attribution did not conserve the sale")
     return quotas
+
+
+def _sale_packaging(chain: Chain, fulfillment, formula, sold: int, specs: list[PackagingSpec]) -> tuple[PackagingDraw, ...]:
+    totals: dict[tuple[str, str], tuple[int, int]] = {}
+    saw_lot = False
+    for draw in fulfillment.draws:
+        batch = chain._batch(draw.batch_id)
+        if not batch.packages:
+            continue
+        saw_lot = True
+        finished = sum(item.milligrams for item in batch.consumptions)
+        for use in batch.packages:
+            lot = chain._package_lot(use.lot_id)
+            numer, denom = _reduce(draw.milligrams * use.pieces, finished)
+            key = (lot.component_id, lot.supplier_name)
+            previous = totals.get(key, (0, 1))
+            totals[key] = _add_fraction(previous[0], previous[1], numer, denom)
+    if saw_lot:
+        return tuple(
+            PackagingDraw(component, numer, denom, supplier)
+            for (component, supplier), (numer, denom) in sorted(totals.items())
+            if numer
+        )
+    unit = sum(line.mg_per_unit for line in formula.lines)
+    return tuple(_pieces(spec, sold, unit) for spec in specs)
 
 
 def _pieces(spec: PackagingSpec, sold: int, unit: int) -> PackagingDraw:

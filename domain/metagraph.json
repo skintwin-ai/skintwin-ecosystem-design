@@ -57,6 +57,7 @@
     { "stage": "specify", "type": "RawMaterial", "side": "supply" },
     { "stage": "source", "type": "Supplier", "side": "supply" },
     { "stage": "procure", "type": "RawMaterial", "side": "supply" },
+    { "stage": "package", "type": "Packaging", "side": "supply" },
     { "stage": "formulate", "type": "Formulation", "side": "center" },
     { "stage": "manufacture", "type": "Formulation", "side": "center" },
     { "stage": "catalog", "type": "ProductSale", "side": "demand" },

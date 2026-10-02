@@ -138,6 +138,18 @@ class SupplyChainTests(unittest.TestCase):
             self.chain.fulfill(
                 "too-much", "sku-serum-c", "cape-town", 3_501, "retail"
             )
+        with self.assertRaises(ChainError):
+            self.chain.manufacture(
+                "batch-too-many-bottles",
+                "sku-serum-c",
+                1,
+                (
+                    ("ascorbic", "lot-ascorbic", 10_000),
+                    ("hyaluronic", "lot-hyaluronic", 500),
+                ),
+                (("bottle-30", "lot-bottle", 3),),
+            )
+        self.assertEqual(self.chain.package_remaining("lot-bottle"), 2)
 
     def test_treatment_requires_a_certificate_and_outcome_requires_fulfillment(self) -> None:
         bare = Chain()
@@ -222,6 +234,17 @@ class SupplyChainTests(unittest.TestCase):
         )
         self.assertEqual(chain.balance("sku-serum-c", "batch-1", PLANT), 10_500)
         self.assertEqual(chain.balance("sku-serum-c", "batch-1", "cape-town"), 3_500)
+        self.assertEqual(chain.package_remaining("lot-bottle"), 2)
+        self.assertEqual(chain.package_remaining("lot-tube"), 2)
+        from domain.metagraph import project
+
+        self.assertEqual(
+            project(chain).packaging_demand(),
+            (
+                ("bottle-30", "Cape Glass", 2, 3),
+                ("tube-cleanser", "Joburg Tubes", 1, 2),
+            ),
+        )
         self.assertEqual(
             sum(movement.milligrams for movement in chain.movements),
             18_000,
@@ -388,7 +411,9 @@ class SupplyChainTests(unittest.TestCase):
             (("ascorbic", 4762), ("hyaluronic", 238)),
         )
         self.assertEqual(retail.packaging[0].component_id, "bottle-30")
+        self.assertEqual(retail.packaging[0].supplier_name, "Cape Glass")
         self.assertEqual((retail.packaging[0].numerator, retail.packaging[0].denominator), (10, 21))
+        self.assertEqual(self.chain.package_remaining("lot-bottle"), 2)
         self.assertEqual(treatment.type_id, "Treatment")
         self.assertEqual(
             tuple((item.ingredient_id, item.milligrams) for item in treatment.materials),
@@ -410,7 +435,7 @@ class SupplyChainTests(unittest.TestCase):
                 ("qual-hyaluronic", "Coastal Polymers", "hyaluronic", 333),
             ),
         )
-        self.assertEqual(bowtie.packaging_demand(), (("bottle-30", 2, 3),))
+        self.assertEqual(bowtie.packaging_demand(), (("bottle-30", "Cape Glass", 2, 3),))
         assert retail.connect is not None and treatment.connect is not None
         self.assertEqual(retail.connect.destination_role, "Outlet")
         self.assertEqual(retail.connect.platform_fee_cents, 462)
