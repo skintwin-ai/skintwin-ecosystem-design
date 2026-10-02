@@ -50,6 +50,9 @@ class SupplyChainTests(unittest.TestCase):
         self.assertIn("skintwin", owners)
         manufacture = next(stage for stage in self.stages if stage.id == "manufacture")
         self.assertEqual(manufacture.owner, "skinform")
+        from domain.platform import verify_surfaces
+
+        verify_surfaces(self.registry)
 
     def test_reference_serum_traces_both_fulfillments(self) -> None:
         retail = self.chain.trace("order-retail")

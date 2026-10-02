@@ -44,6 +44,8 @@ class Stage:
     artifact: str
     entry: str
     note: str = ""
+    surface: str = ""
+    marker: str = ""
 
 
 @dataclass(frozen=True)
@@ -676,6 +678,8 @@ def load_stages(
         owner = _text(str(raw.get("owner", "")), "stage owner")
         artifact = _text(str(raw.get("artifact", "")), "stage artifact")
         entry = _text(str(raw.get("entry", "")), "stage entry")
+        surface = _text(str(raw.get("surface", "")), "stage surface")
+        marker = _text(str(raw.get("marker", "")), "stage marker")
         note = raw.get("note") or ""
         if not isinstance(note, str):
             raise ChainError(f"{stage_id}: note must be a string")
@@ -687,7 +691,7 @@ def load_stages(
             raise ChainError(f"{stage_id}: owner {owner} is not a known repository")
         seen_ids.add(stage_id)
         seen_artifacts.add(artifact)
-        stages.append(Stage(stage_id, owner, artifact, entry, note))
+        stages.append(Stage(stage_id, owner, artifact, entry, note, surface, marker))
     commanded = set(COMMAND_STAGE.values())
     if seen_ids != commanded:
         missing = commanded - seen_ids

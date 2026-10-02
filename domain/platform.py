@@ -12,7 +12,13 @@ from pathlib import Path
 from domain.bootstrap import find_repo
 from domain.ledger import replay
 from domain.model import load_registry
-from domain.supply_chain import COMMAND_STAGE, Chain, ChainError, format_trace, load_stages
+from domain.supply_chain import (
+    COMMAND_STAGE,
+    Chain,
+    ChainError,
+    format_trace,
+    load_stages,
+)
 
 HUB_ROOT = Path(__file__).resolve().parents[1]
 
@@ -76,8 +82,26 @@ def ledger_env(ledger: Path) -> dict[str, str]:
     return env
 
 
+def verify_surfaces(registry=None) -> None:
+    """Each stage names the product file that records it. That file must exist."""
+    loaded = registry or load_registry()
+    for stage in load_stages(loaded):
+        if stage.owner == loaded.hub.name:
+            path = HUB_ROOT / stage.surface
+        else:
+            checkout = find_repo(stage.owner, loaded)
+            if checkout is None:
+                raise ChainError(f"{stage.owner} checkout is not present for {stage.id}")
+            path = checkout / stage.surface
+        if not path.is_file():
+            raise ChainError(f"{stage.id}: surface {stage.surface} is missing")
+        if stage.marker not in path.read_text(encoding="utf-8"):
+            raise ChainError(f"{stage.id}: {stage.surface} does not implement {stage.marker}")
+
+
 def run(ledger: Path) -> Chain:
     """Append the reference serum by calling each stage owner once."""
+    verify_surfaces()
     if ledger.exists() and ledger.stat().st_size:
         raise ChainError(f"ledger {ledger} already has records")
     ledger.parent.mkdir(parents=True, exist_ok=True)
