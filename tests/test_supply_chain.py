@@ -333,6 +333,96 @@ class SupplyChainTests(unittest.TestCase):
             else:
                 os.environ["CLOUD_AGENT_REPO_ROOTS"] = previous_roots
 
+    def test_a_rejected_command_list_appends_nothing(self) -> None:
+        from domain.ledger import append_command, append_commands, replay
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp) / "supply-chain.jsonl"
+            append_command(
+                "specify_ingredient",
+                {"ingredient_id": "glycerin", "inci": "Glycerin", "cas": "56-81-5"},
+                ledger,
+            )
+            before = ledger.read_text(encoding="utf-8")
+            with self.assertRaises(ChainError):
+                append_commands(
+                    [
+                        {
+                            "command": "define_formula",
+                            "args": {
+                                "formula_id": "cleanser",
+                                "name": "Gentle cleanser",
+                                "lines": [["glycerin", 8000]],
+                            },
+                        },
+                        {
+                            "command": "define_formula",
+                            "args": {
+                                "formula_id": "missing",
+                                "name": "Missing",
+                                "lines": [["not-an-ingredient", 1000]],
+                            },
+                        },
+                    ],
+                    ledger,
+                )
+            self.assertEqual(ledger.read_text(encoding="utf-8"), before)
+            self.assertEqual(replay(ledger).formulas, ())
+
+    def test_sales_project_to_supplier_and_packaging_demand(self) -> None:
+        from domain.metagraph import ancestors, load_document, project
+
+        document = load_document()
+        self.assertIn("Supply", ancestors(document, "RawMaterial"))
+        self.assertIn("Supply", ancestors(document, "Packaging"))
+        self.assertIn("Demand", ancestors(document, "ProductSale"))
+        self.assertIn("Demand", ancestors(document, "Treatment"))
+        self.assertIn("Center", ancestors(document, "Formulation"))
+        bowtie = project(self.chain, document)
+        retail = next(sale for sale in bowtie.sales if sale.fulfillment_id == "order-retail")
+        treatment = next(sale for sale in bowtie.sales if sale.fulfillment_id == "order-treatment")
+        self.assertEqual(retail.type_id, "ProductSale")
+        self.assertEqual(retail.outlet, "cape-town")
+        self.assertEqual(
+            tuple((item.ingredient_id, item.milligrams) for item in retail.materials),
+            (("ascorbic", 4762), ("hyaluronic", 238)),
+        )
+        self.assertEqual(retail.packaging[0].component_id, "bottle-30")
+        self.assertEqual((retail.packaging[0].numerator, retail.packaging[0].denominator), (10, 21))
+        self.assertEqual(treatment.type_id, "Treatment")
+        self.assertEqual(
+            tuple((item.ingredient_id, item.milligrams) for item in treatment.materials),
+            (("ascorbic", 1905), ("hyaluronic", 95)),
+        )
+        self.assertEqual(
+            (treatment.packaging[0].numerator, treatment.packaging[0].denominator),
+            (4, 21),
+        )
+        self.assertEqual(sum(sale.milligrams for sale in bowtie.sales), 7_000)
+        self.assertEqual(
+            sum(milligrams for *_rest, milligrams in bowtie.supplier_demand()),
+            7_000,
+        )
+        self.assertEqual(
+            bowtie.supplier_demand(),
+            (
+                ("qual-ascorbic", "Cape Acids", "ascorbic", 6667),
+                ("qual-hyaluronic", "Coastal Polymers", "hyaluronic", 333),
+            ),
+        )
+        self.assertEqual(bowtie.packaging_demand(), (("bottle-30", 2, 3),))
+        assert retail.connect is not None and treatment.connect is not None
+        self.assertEqual(retail.connect.destination_role, "Outlet")
+        self.assertEqual(retail.connect.platform_fee_cents, 462)
+        self.assertEqual(retail.connect.destination_cents, 18_038)
+        self.assertEqual(treatment.connect.destination_role, "Practitioner")
+        self.assertEqual(treatment.connect.platform_fee_cents, 1_125)
+        self.assertEqual(treatment.connect.destination_cents, 43_875)
+        self.assertEqual(
+            {fiber.stage for fiber in document.fibers},
+            {stage.id for stage in self.stages},
+        )
+
     def test_platform_refuses_a_ledger_that_already_has_records(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             ledger = Path(tmp) / "supply-chain.jsonl"

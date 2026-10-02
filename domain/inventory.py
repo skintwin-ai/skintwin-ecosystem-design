@@ -393,6 +393,13 @@ def _supply_chain_lines() -> list[str]:
     for stage in load_stages():
         recorded_by = stage.surface_owner or stage.owner
         lines.append(f"  {stage.id}: {stage.owner} recorded by {recorded_by}/{stage.surface}")
+    from domain.metagraph import load_document
+
+    document = load_document()
+    lines.append(
+        "metagraph: "
+        + ", ".join(f"{fiber.stage}->{fiber.type_id}" for fiber in document.fibers)
+    )
     return lines
 
 

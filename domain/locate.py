@@ -73,12 +73,19 @@ def checkout(name: str) -> Path | None:
 
 def commit_command(request: dict) -> str | None:
     """Append one accepted command. Return an error string when the ledger rejects it."""
+    return commit_commands([request])
+
+
+def commit_commands(requests: list) -> str | None:
+    """Append every accepted command, or none of them."""
     hub = find_hub()
     if hub is None or not os.environ.get("SKINTWIN_CHAIN_LEDGER"):
         return "supply-chain hub is not present"
+    if not isinstance(requests, list):
+        return "commands must be a list"
     completed = subprocess.run(
         [sys.executable, "-m", "domain.ledger"],
-        input=json.dumps(request),
+        input=json.dumps({"commands": requests}),
         text=True,
         capture_output=True,
         cwd=hub,

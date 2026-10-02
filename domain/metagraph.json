@@ -1,0 +1,69 @@
+{
+  "types": [
+    { "id": "Supply", "parents": [] },
+    { "id": "RawMaterial", "parents": ["Supply"] },
+    { "id": "Packaging", "parents": ["Supply"] },
+    { "id": "Demand", "parents": [] },
+    { "id": "ProductSale", "parents": ["Demand"] },
+    { "id": "Treatment", "parents": ["Demand"] },
+    { "id": "Center", "parents": [] },
+    { "id": "Formulation", "parents": ["Center"] },
+    { "id": "Logistics", "parents": ["Center"] },
+    { "id": "Partner", "parents": [] },
+    { "id": "Supplier", "parents": ["Partner"] },
+    { "id": "Outlet", "parents": ["Partner"] },
+    { "id": "Practitioner", "parents": ["Partner"] },
+    { "id": "Platform", "parents": ["Partner"] }
+  ],
+  "connectTemplates": [
+    {
+      "id": "platform",
+      "type": "Platform",
+      "charge": "application_fee",
+      "feeBps": 250
+    },
+    {
+      "id": "supplier",
+      "type": "Supplier",
+      "charge": "transfer",
+      "extends": "platform"
+    },
+    {
+      "id": "outlet",
+      "type": "Outlet",
+      "charge": "destination",
+      "extends": "platform"
+    },
+    {
+      "id": "practitioner",
+      "type": "Practitioner",
+      "charge": "destination",
+      "extends": "platform"
+    }
+  ],
+  "packaging": [
+    {
+      "id": "bottle-30",
+      "formula_id": "serum-c",
+      "pieces_per_unit": 1
+    },
+    {
+      "id": "tube-cleanser",
+      "formula_id": "cleanser",
+      "pieces_per_unit": 1
+    }
+  ],
+  "fibers": [
+    { "stage": "specify", "type": "RawMaterial", "side": "supply" },
+    { "stage": "source", "type": "Supplier", "side": "supply" },
+    { "stage": "procure", "type": "RawMaterial", "side": "supply" },
+    { "stage": "formulate", "type": "Formulation", "side": "center" },
+    { "stage": "manufacture", "type": "Formulation", "side": "center" },
+    { "stage": "catalog", "type": "ProductSale", "side": "demand" },
+    { "stage": "distribute", "type": "Logistics", "side": "center" },
+    { "stage": "certify", "type": "Practitioner", "side": "demand" },
+    { "stage": "fulfill", "type": "Demand", "side": "demand" },
+    { "stage": "account", "type": "Platform", "side": "center" },
+    { "stage": "outcome", "type": "Treatment", "side": "demand" }
+  ]
+}

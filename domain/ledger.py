@@ -37,15 +37,35 @@ def replay(path: Path) -> Chain:
 
 
 def append_command(command: str, args: dict, path: Path | None = None) -> dict:
+    return append_commands([{"command": command, "args": args}], path)
+
+
+def append_commands(commands: list, path: Path | None = None) -> dict:
+    """Apply every command, then append them. A rejection writes nothing."""
+    parsed: list[tuple[str, dict]] = []
+    for item in commands:
+        if not isinstance(item, dict) or not isinstance(item.get("command"), str):
+            raise ChainError("each ledger command needs a command name")
+        args = item.get("args") if item.get("args") is not None else {}
+        if not isinstance(args, dict):
+            raise ChainError("ledger command args must be an object")
+        parsed.append((item["command"], args))
+    if not parsed:
+        return {"ok": True, "count": 0}
     target = path or ledger_path()
     if target is None:
         raise ChainError("SKINTWIN_CHAIN_LEDGER is not set")
     chain = replay(target)
-    chain = apply_command(chain, command, args)
+    for command, args in parsed:
+        chain = apply_command(chain, command, args)
+    text = "".join(
+        json.dumps({"command": command, "args": args}, sort_keys=True) + "\n"
+        for command, args in parsed
+    )
     target.parent.mkdir(parents=True, exist_ok=True)
     with target.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps({"command": command, "args": args}, sort_keys=True) + "\n")
-    return {"ok": True}
+        handle.write(text)
+    return {"ok": True, "count": len(parsed)}
 
 
 def apply_command(chain: Chain, command: str, args: dict) -> Chain:
@@ -161,7 +181,13 @@ def main() -> None:
 
     request = json.load(sys.stdin)
     try:
-        append_command(request["command"], request.get("args") or {})
+        if isinstance(request, dict) and "commands" in request:
+            commands = request["commands"]
+            if not isinstance(commands, list):
+                raise ChainError("commands must be a list")
+            append_commands(commands)
+        else:
+            append_command(request["command"], request.get("args") or {})
     except (ChainError, KeyError, TypeError, ValueError) as exc:
         json.dump({"ok": False, "error": str(exc)}, sys.stdout)
         raise SystemExit(1)

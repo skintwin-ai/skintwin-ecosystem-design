@@ -86,13 +86,20 @@ function checkout(name) {
 }
 
 function commitCommand(request) {
+  return commitCommands([request]);
+}
+
+function commitCommands(requests) {
   const hub = hubRoot();
   if (!hub || !process.env.SKINTWIN_CHAIN_LEDGER) {
     return { ok: false, error: "supply-chain hub is not present" };
   }
+  if (!Array.isArray(requests)) {
+    return { ok: false, error: "commands must be a list" };
+  }
   const child = spawnSync("python3", ["-m", "domain.ledger"], {
     cwd: hub,
-    input: JSON.stringify(request),
+    input: JSON.stringify({ commands: requests }),
     encoding: "utf8",
   });
   if (child.status !== 0) {
@@ -122,6 +129,7 @@ module.exports = {
   bindLedger,
   checkout,
   commitCommand,
+  commitCommands,
   hubRoot,
   ledgerFile,
   moduleHub,

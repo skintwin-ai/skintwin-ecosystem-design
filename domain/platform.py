@@ -214,6 +214,9 @@ def main() -> None:
         for product in load_products()
         for fulfillment_id in product.traces
     ]
+    from domain.metagraph import format_bowtie, project
+
+    blocks.append(format_bowtie(project(chain)))
     print("\n---\n".join(blocks))
 
 
