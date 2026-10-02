@@ -1,4 +1,4 @@
-"""Run the reference serum through every stage owner into one ledger."""
+"""Walk every product in the operations document through its stage owners."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from typing import NamedTuple
 
 from domain.bootstrap import find_repo
 from domain.ledger import replay
@@ -21,8 +22,10 @@ from domain.supply_chain import (
 )
 
 HUB_ROOT = Path(__file__).resolve().parents[1]
+OPERATIONS_PATH = HUB_ROOT / "domain" / "operations.json"
 RETAIL_FULFILLMENT = "order-retail:0:sku-serum-c"
 TREATMENT_FULFILLMENT = "order-treatment:0:sku-serum-c"
+CLEANSER_FULFILLMENT = "order-cleanser:0:sku-cleanser"
 
 REFERENCE_COMMANDS: tuple[tuple[str, dict], ...] = (
     ("specify_ingredient", {"ingredient_id": "ascorbic", "inci": "Ascorbic Acid", "cas": "50-81-7"}),
@@ -44,72 +47,51 @@ REFERENCE_COMMANDS: tuple[tuple[str, dict], ...] = (
     ("record_outcome", {"outcome_id": "outcome-treatment", "fulfillment_id": "order-treatment", "concern": "pigmentation", "score": 81}),
 )
 
-# Product payloads. The platform calls the function named by each stage's invoke
-# block, so the serum goes through the same writers the product screens use.
-SURFACE_CALLS: tuple[tuple[str, list], ...] = (
-    ("specify", [{"name": "ascorbic", "inci_name": "Ascorbic Acid", "cas_number": "50-81-7"}]),
-    ("specify", [{"name": "hyaluronic", "inci_name": "Sodium Hyaluronate", "cas_number": "9067-32-7"}]),
-    ("source", [{"qualification_id": "qual-ascorbic", "supplier_name": "Cape Acids", "ingredient_id": "ascorbic"}]),
-    ("source", [{"qualification_id": "qual-hyaluronic", "supplier_name": "Coastal Polymers", "ingredient_id": "hyaluronic"}]),
-    ("procure", [{"lot_id": "lot-ascorbic", "ingredient_id": "ascorbic", "qualification_id": "qual-ascorbic", "quantity_kg": 0.05}]),
-    ("procure", [{"lot_id": "lot-hyaluronic", "ingredient_id": "hyaluronic", "qualification_id": "qual-hyaluronic", "quantity_kg": 0.005}]),
-    (
-        "formulate",
-        [{
-            "name": "Vitamin C serum",
-            "formula_id": "serum-c",
-            "totalWeight": 100,
-            "ingredients": [
-                {"ingredientId": "ascorbic", "concentration": 10},
-                {"ingredientId": "hyaluronic", "concentration": 0.5},
-            ],
-        }],
-    ),
-    ("catalog", [{"sku": "sku-serum-c", "name": "Vitamin C serum 10.5g", "formulaId": "serum-c"}]),
-    (
-        "manufacture",
-        [{
-            "batch_id": "batch-1",
-            "sku_id": "sku-serum-c",
-            "units": 2,
-            "allocations": [["ascorbic", "lot-ascorbic", 20000], ["hyaluronic", "lot-hyaluronic", 1000]],
-        }],
-    ),
-    (
-        "distribute",
-        [
-            "xfer-cape-town",
-            [{
-                "delivery": {
-                    "sku_id": "sku-serum-c",
-                    "batch_id": "batch-1",
-                    "source": "plant",
-                    "destination": "cape-town",
-                    "milligrams": 10500,
-                },
-            }],
-        ],
-    ),
-    ("certify", [{"moduleId": "cert-aya", "userId": "aya", "course": "RegimA facial protocol"}]),
-    (
-        "fulfill",
-        ["order-retail", [{"sku": "sku-serum-c", "location": "cape-town", "milligrams": 5000}]],
-    ),
-    (
-        "fulfill",
-        ["order-treatment", [{
-            "type": "treatment",
-            "sku": "sku-serum-c",
-            "location": "cape-town",
-            "milligrams": 2000,
-            "practitionerId": "aya",
-        }]],
-    ),
-    ("account", [{"settlement_id": "pay-retail", "fulfillment_id": RETAIL_FULFILLMENT, "amount": 185.0, "currency": "ZAR"}]),
-    ("account", [{"settlement_id": "pay-treatment", "fulfillment_id": TREATMENT_FULFILLMENT, "amount": 450.0, "currency": "ZAR"}]),
-    ("outcome", [{"outcomeId": "outcome-retail", "fulfillmentId": RETAIL_FULFILLMENT, "concern": "dullness", "score": 72}]),
-    ("outcome", [{"outcomeId": "outcome-treatment", "fulfillmentId": TREATMENT_FULFILLMENT, "concern": "pigmentation", "score": 81}]),
-)
+
+class ProductWalk(NamedTuple):
+    id: str
+    traces: tuple[str, ...]
+    calls: tuple[tuple[str, list], ...]
+
+
+def load_products(path: Path | None = None) -> tuple[ProductWalk, ...]:
+    """Products the platform walks, in document order."""
+    source = path or OPERATIONS_PATH
+    data = json.loads(source.read_text(encoding="utf-8"))
+    products = data.get("products") if isinstance(data, dict) else None
+    if not isinstance(products, list) or not products:
+        raise ChainError("operations must list at least one product")
+    known = {stage.id for stage in load_stages()}
+    loaded: list[ProductWalk] = []
+    seen: set[str] = set()
+    for product in products:
+        if not isinstance(product, dict):
+            raise ChainError("each operation product must be an object")
+        product_id = product.get("id")
+        traces = product.get("traces")
+        calls = product.get("calls")
+        if not isinstance(product_id, str) or not product_id.strip() or product_id in seen:
+            raise ChainError("each operation product needs a unique id")
+        seen.add(product_id)
+        if (
+            not isinstance(traces, list)
+            or not traces
+            or not all(isinstance(item, str) and item.strip() for item in traces)
+        ):
+            raise ChainError(f"{product_id} needs fulfillment traces")
+        if not isinstance(calls, list) or not calls:
+            raise ChainError(f"{product_id} needs calls")
+        parsed: list[tuple[str, list]] = []
+        for call in calls:
+            stage_id = call.get("stage") if isinstance(call, dict) else None
+            args = call.get("args") if isinstance(call, dict) else None
+            if stage_id not in known:
+                raise ChainError(f"{product_id} calls unknown stage {stage_id}")
+            if not isinstance(args, list):
+                raise ChainError(f"{product_id} {stage_id} args must be a list")
+            parsed.append((stage_id, args))
+        loaded.append(ProductWalk(product_id, tuple(traces), tuple(parsed)))
+    return tuple(loaded)
 
 
 def owner_runner(command: str) -> list[str]:
@@ -203,18 +185,21 @@ def run_surface(stage_id: str, args: list, env: dict[str, str]) -> subprocess.Co
 
 
 def run(ledger: Path) -> Chain:
-    """Append the reference serum by calling each product surface once."""
+    """Append every product by calling the function named in its operations."""
     verify_surfaces()
+    products = load_products()
     if ledger.exists() and ledger.stat().st_size:
         raise ChainError(f"ledger {ledger} already has records")
     ledger.parent.mkdir(parents=True, exist_ok=True)
     env = ledger_env(ledger)
-    for stage_id, args in SURFACE_CALLS:
-        completed = run_surface(stage_id, args, env)
-        if completed.returncode != 0:
-            raise ChainError(
-                f"{stage_id} failed: {completed.stdout.strip() or completed.stderr.strip()}"
-            )
+    for product in products:
+        for stage_id, args in product.calls:
+            completed = run_surface(stage_id, args, env)
+            if completed.returncode != 0:
+                raise ChainError(
+                    f"{product.id} {stage_id} failed: "
+                    f"{completed.stdout.strip() or completed.stderr.strip()}"
+                )
     return replay(ledger)
 
 
@@ -224,9 +209,12 @@ def main() -> None:
     else:
         path = Path(tempfile.mkdtemp(prefix="skintwin-chain-")) / "supply-chain.jsonl"
     chain = run(path)
-    print(format_trace(chain, RETAIL_FULFILLMENT))
-    print("---")
-    print(format_trace(chain, TREATMENT_FULFILLMENT))
+    blocks = [
+        format_trace(chain, fulfillment_id)
+        for product in load_products()
+        for fulfillment_id in product.traces
+    ]
+    print("\n---\n".join(blocks))
 
 
 if __name__ == "__main__":

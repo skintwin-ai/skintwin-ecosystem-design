@@ -1,0 +1,178 @@
+{
+  "products": [
+    {
+      "id": "serum-c",
+      "traces": [
+        "order-retail:0:sku-serum-c",
+        "order-treatment:0:sku-serum-c"
+      ],
+      "calls": [
+        {
+          "stage": "specify",
+          "args": [{ "name": "ascorbic", "inci_name": "Ascorbic Acid", "cas_number": "50-81-7" }]
+        },
+        {
+          "stage": "specify",
+          "args": [{ "name": "hyaluronic", "inci_name": "Sodium Hyaluronate", "cas_number": "9067-32-7" }]
+        },
+        {
+          "stage": "source",
+          "args": [{ "qualification_id": "qual-ascorbic", "supplier_name": "Cape Acids", "ingredient_id": "ascorbic" }]
+        },
+        {
+          "stage": "source",
+          "args": [{ "qualification_id": "qual-hyaluronic", "supplier_name": "Coastal Polymers", "ingredient_id": "hyaluronic" }]
+        },
+        {
+          "stage": "procure",
+          "args": [{ "lot_id": "lot-ascorbic", "ingredient_id": "ascorbic", "qualification_id": "qual-ascorbic", "quantity_kg": 0.05 }]
+        },
+        {
+          "stage": "procure",
+          "args": [{ "lot_id": "lot-hyaluronic", "ingredient_id": "hyaluronic", "qualification_id": "qual-hyaluronic", "quantity_kg": 0.005 }]
+        },
+        {
+          "stage": "formulate",
+          "args": [{
+            "name": "Vitamin C serum",
+            "formula_id": "serum-c",
+            "totalWeight": 100,
+            "ingredients": [
+              { "ingredientId": "ascorbic", "concentration": 10 },
+              { "ingredientId": "hyaluronic", "concentration": 0.5 }
+            ]
+          }]
+        },
+        {
+          "stage": "catalog",
+          "args": [{ "sku": "sku-serum-c", "name": "Vitamin C serum 10.5g", "formulaId": "serum-c" }]
+        },
+        {
+          "stage": "manufacture",
+          "args": [{
+            "batch_id": "batch-1",
+            "sku_id": "sku-serum-c",
+            "units": 2,
+            "allocations": [["ascorbic", "lot-ascorbic", 20000], ["hyaluronic", "lot-hyaluronic", 1000]]
+          }]
+        },
+        {
+          "stage": "distribute",
+          "args": [
+            "xfer-cape-town",
+            [{
+              "delivery": {
+                "sku_id": "sku-serum-c",
+                "batch_id": "batch-1",
+                "source": "plant",
+                "destination": "cape-town",
+                "milligrams": 10500
+              }
+            }]
+          ]
+        },
+        {
+          "stage": "certify",
+          "args": [{ "moduleId": "cert-aya", "userId": "aya", "course": "RegimA facial protocol" }]
+        },
+        {
+          "stage": "fulfill",
+          "args": ["order-retail", [{ "sku": "sku-serum-c", "location": "cape-town", "milligrams": 5000 }]]
+        },
+        {
+          "stage": "fulfill",
+          "args": ["order-treatment", [{
+            "type": "treatment",
+            "sku": "sku-serum-c",
+            "location": "cape-town",
+            "milligrams": 2000,
+            "practitionerId": "aya"
+          }]]
+        },
+        {
+          "stage": "account",
+          "args": [{ "settlement_id": "pay-retail", "fulfillment_id": "order-retail:0:sku-serum-c", "amount": 185.0, "currency": "ZAR" }]
+        },
+        {
+          "stage": "account",
+          "args": [{ "settlement_id": "pay-treatment", "fulfillment_id": "order-treatment:0:sku-serum-c", "amount": 450.0, "currency": "ZAR" }]
+        },
+        {
+          "stage": "outcome",
+          "args": [{ "outcomeId": "outcome-retail", "fulfillmentId": "order-retail:0:sku-serum-c", "concern": "dullness", "score": 72 }]
+        },
+        {
+          "stage": "outcome",
+          "args": [{ "outcomeId": "outcome-treatment", "fulfillmentId": "order-treatment:0:sku-serum-c", "concern": "pigmentation", "score": 81 }]
+        }
+      ]
+    },
+    {
+      "id": "cleanser",
+      "traces": ["order-cleanser:0:sku-cleanser"],
+      "calls": [
+        {
+          "stage": "specify",
+          "args": [{ "name": "glycerin", "inci_name": "Glycerin", "cas_number": "56-81-5" }]
+        },
+        {
+          "stage": "source",
+          "args": [{ "qualification_id": "qual-glycerin", "supplier_name": "Inland Humectants", "ingredient_id": "glycerin" }]
+        },
+        {
+          "stage": "procure",
+          "args": [{ "lot_id": "lot-glycerin", "ingredient_id": "glycerin", "qualification_id": "qual-glycerin", "quantity_kg": 0.02 }]
+        },
+        {
+          "stage": "formulate",
+          "args": [{
+            "name": "Gentle cleanser",
+            "formula_id": "cleanser",
+            "totalWeight": 100,
+            "ingredients": [{ "ingredientId": "glycerin", "concentration": 8 }]
+          }]
+        },
+        {
+          "stage": "catalog",
+          "args": [{ "sku": "sku-cleanser", "name": "Gentle cleanser 8g", "formulaId": "cleanser" }]
+        },
+        {
+          "stage": "manufacture",
+          "args": [{
+            "batch_id": "batch-cleanser",
+            "sku_id": "sku-cleanser",
+            "units": 1,
+            "allocations": [["glycerin", "lot-glycerin", 8000]]
+          }]
+        },
+        {
+          "stage": "distribute",
+          "args": [
+            "xfer-johannesburg",
+            [{
+              "delivery": {
+                "sku_id": "sku-cleanser",
+                "batch_id": "batch-cleanser",
+                "source": "plant",
+                "destination": "johannesburg",
+                "milligrams": 8000
+              }
+            }]
+          ]
+        },
+        {
+          "stage": "fulfill",
+          "args": ["order-cleanser", [{ "sku": "sku-cleanser", "location": "johannesburg", "milligrams": 4000 }]]
+        },
+        {
+          "stage": "account",
+          "args": [{ "settlement_id": "pay-cleanser", "fulfillment_id": "order-cleanser:0:sku-cleanser", "amount": 95.0, "currency": "ZAR" }]
+        },
+        {
+          "stage": "outcome",
+          "args": [{ "outcomeId": "outcome-cleanser", "fulfillmentId": "order-cleanser:0:sku-cleanser", "concern": "dryness", "score": 64 }]
+        }
+      ]
+    }
+  ]
+}

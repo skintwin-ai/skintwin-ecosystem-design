@@ -14,12 +14,14 @@ if str(HUB_ROOT) not in sys.path:
     sys.path.insert(0, str(HUB_ROOT))
 
 from domain.model import load_registry  # noqa: E402
-from domain.platform import (
+from domain.platform import (  # noqa: E402
+    CLEANSER_FULFILLMENT,
     REFERENCE_COMMANDS,
     RETAIL_FULFILLMENT,
     TREATMENT_FULFILLMENT,
+    load_products,
     run as run_platform,
-)  # noqa: E402
+)
 from domain.supply_chain import (  # noqa: E402
     COMMAND_STAGE,
     PLANT,
@@ -204,10 +206,43 @@ class SupplyChainTests(unittest.TestCase):
         self.assertEqual(chain.trace(RETAIL_FULFILLMENT)["outcome"], 72)
         self.assertEqual(chain.trace(TREATMENT_FULFILLMENT)["practitioner"], "aya")
         self.assertEqual(chain.lot_remaining("lot-ascorbic"), 30_000)
+        self.assertEqual(chain.lot_remaining("lot-hyaluronic"), 4_000)
+        cleanser = chain.trace(CLEANSER_FULFILLMENT)
+        self.assertEqual(cleanser["ingredients"], ("glycerin",))
+        self.assertEqual(cleanser["lots"], ("lot-glycerin",))
+        self.assertEqual(cleanser["batches"], ("batch-cleanser",))
+        self.assertEqual(cleanser["kind"], "retail")
+        self.assertEqual(cleanser["location"], "johannesburg")
+        self.assertEqual(cleanser["settlement"], "pay-cleanser")
+        self.assertEqual(cleanser["outcome"], 64)
+        self.assertEqual(chain.lot_remaining("lot-glycerin"), 12_000)
+        self.assertEqual(chain.balance("sku-cleanser", "batch-cleanser", PLANT), 0)
+        self.assertEqual(
+            chain.balance("sku-cleanser", "batch-cleanser", "johannesburg"), 4_000
+        )
+        self.assertEqual(chain.balance("sku-serum-c", "batch-1", PLANT), 10_500)
+        self.assertEqual(chain.balance("sku-serum-c", "batch-1", "cape-town"), 3_500)
+        self.assertEqual(
+            sum(movement.milligrams for movement in chain.movements),
+            18_000,
+        )
         self.assertEqual(
             [record[0] for record in REFERENCE_COMMANDS].count("manufacture"),
             1,
         )
+
+    def test_operations_list_every_product_the_platform_walks(self) -> None:
+        products = load_products()
+        self.assertEqual([product.id for product in products], ["serum-c", "cleanser"])
+        self.assertEqual(products[0].traces, (RETAIL_FULFILLMENT, TREATMENT_FULFILLMENT))
+        self.assertEqual(products[1].traces, (CLEANSER_FULFILLMENT,))
+        called = {stage_id for product in products for stage_id, _args in product.calls}
+        self.assertEqual(called, {stage.id for stage in self.stages})
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "operations.json"
+            path.write_text(json.dumps({"products": [{"id": "x", "traces": ["a"], "calls": [{"stage": "nope", "args": []}]}]}))
+            with self.assertRaises(ChainError):
+                load_products(path)
 
     def test_stage_owners_read_the_hub_from_the_registry(self) -> None:
         import importlib.util
