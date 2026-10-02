@@ -246,6 +246,7 @@ class SupplyChainTests(unittest.TestCase):
         from domain.metagraph import project, replenishment_commands
 
         self.assertEqual(replenishment_commands(chain, "replenish-outlets"), [])
+        self.assertEqual(replenishment_commands(chain, "another-shipment"), [])
         self.assertEqual(project(chain).logistics, ())
         self.assertEqual(chain.package_remaining("lot-bottle"), 2)
         self.assertEqual(chain.package_remaining("lot-tube"), 2)
@@ -274,6 +275,10 @@ class SupplyChainTests(unittest.TestCase):
         self.assertEqual(products[1].traces, (CLEANSER_FULFILLMENT,))
         called = {stage_id for product in products for stage_id, _args in product.calls}
         self.assertEqual(called, {stage.id for stage in self.stages})
+        from domain.platform import replenishment_shipment, replenishment_shipments
+
+        self.assertEqual(replenishment_shipments(), ("replenish-outlets",))
+        self.assertEqual(replenishment_shipment(), "replenish-outlets")
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "operations.json"
             path.write_text(json.dumps({"products": [{"id": "x", "traces": ["a"], "calls": [{"stage": "nope", "args": []}]}]}))
@@ -467,6 +472,7 @@ class SupplyChainTests(unittest.TestCase):
                 args["milligrams"],
             )
         self.assertEqual(replenishment_commands(restocked, "replenish-outlets"), [])
+        self.assertEqual(replenishment_commands(restocked, "another-shipment"), [])
         self.assertEqual(restocked.balance("sku-serum-c", "batch-1", PLANT), 3_500)
         self.assertEqual(restocked.balance("sku-serum-c", "batch-1", "cape-town"), 10_500)
         short = self.chain.transfer(

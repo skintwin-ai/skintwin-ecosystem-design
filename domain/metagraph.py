@@ -258,13 +258,16 @@ def format_bowtie(bowtie: Bowtie) -> str:
 def replenishment_commands(chain: Chain, shipment_id: str) -> list[dict]:
     """Transfers that replace what each outlet sold, drawn from plant stock.
 
-    Repeating the same shipment id sends nothing further. A short plant is
+    Repeating the same shipment id sends nothing further. A shipment id that
+    is not on the ledger also sends nothing an operations replenishment has
+    already replaced. Distribution transfers stay uncovered. A short plant is
     shared across outlets in proportion to what they sold.
     """
     if not isinstance(shipment_id, str) or not shipment_id.strip():
         raise MetagraphError("shipment id is required")
     shipment_id = shipment_id.strip()
     prefix = f"{shipment_id}:"
+    covered_by = _coverage_prefixes(shipment_id)
     demand: dict[tuple[str, str, str], int] = {}
     returned = {item.fulfillment_id for item in chain.returns}
     for fulfillment in chain.fulfillments:
@@ -275,7 +278,7 @@ def replenishment_commands(chain: Chain, shipment_id: str) -> list[dict]:
             demand[key] = demand.get(key, 0) + draw.milligrams
     covered: dict[tuple[str, str, str], int] = {}
     for movement in chain.movements:
-        if movement.milligrams < 1 or not str(movement.ref).startswith(prefix):
+        if movement.milligrams < 1 or not str(movement.ref).startswith(covered_by):
             continue
         key = (movement.sku_id, movement.batch_id, movement.location)
         covered[key] = covered.get(key, 0) + movement.milligrams
@@ -313,6 +316,22 @@ def replenishment_commands(chain: Chain, shipment_id: str) -> list[dict]:
             )
             index += 1
     return commands
+
+
+def _coverage_prefixes(shipment_id: str) -> tuple[str, ...]:
+    """Prefixes that already replaced outlet sales for this shipment id.
+
+    The requested id counts, and so does every replenishment shipment named
+    in operations. A distribution id such as ``xfer-cape-town:0`` does not.
+    """
+    from domain.platform import replenishment_shipments
+
+    prefixes: list[str] = []
+    for item in (shipment_id, *replenishment_shipments()):
+        candidate = f"{item}:"
+        if candidate not in prefixes:
+            prefixes.append(candidate)
+    return tuple(prefixes)
 
 
 def main() -> None:
