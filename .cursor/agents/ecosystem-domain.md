@@ -18,7 +18,7 @@ When invoked:
    - gpu/julia/php stacks cannot be default-installed
    - hub is not a `repositoryDependencies` entry
    - environment keys stay exactly `name`, `install`, `repositoryDependencies`
-3. Tests and AGENTS.md must **read or point at** the registry. Do not grow parallel lists in `tests/test_cloud_agent_env.py` or new if/else in the install script.
+3. Tests and AGENTS.md must **read or point at** the registry. Do not grow parallel lists in `tests/test_cloud_agent_env.py` or new if/else in the install script. Inventory and `analysis/repository_analysis.md` are consumers (`python3 -m domain.inventory`).
 4. `.cursor/environment.json` is a Cursor-facing projection of the registry. Keep them in lockstep.
 5. Do not force useless wrappers. A new abstraction is warranted only when a fact is otherwise duplicated across scripts, tests, and docs.
 

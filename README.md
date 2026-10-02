@@ -8,9 +8,11 @@ This hub is the versioned Cloud Agent environment for org-wide work. Start Cloud
 
 - Domain registry: [`domain/org-ecosystem.json`](./domain/org-ecosystem.json)
 - Install script: [`scripts/cloud-agent-install.sh`](./scripts/cloud-agent-install.sh)
+- Inventory consumer: `python3 -m domain.inventory`
+- Rendered inventory: [`analysis/repository_analysis.md`](./analysis/repository_analysis.md)
 - Agent notes: [`AGENTS.md`](./AGENTS.md)
 
-Install is idempotent and skip-missing. The registry owns CPU-core vs checkout-only identity and install kind. Other siblings stay checkout-only. Install does not run application tests or start daemons. A committed environment file replaces dashboard config for this revision.
+Install is idempotent and skip-missing. The registry owns CPU-core vs checkout-only identity and install kind. Other siblings stay checkout-only. Install does not run application tests or start daemons. A committed environment file replaces dashboard config for this revision. Refresh the analysis page from the registry; do not hand-edit sibling rows.
 
 ## 1. Introduction
 
