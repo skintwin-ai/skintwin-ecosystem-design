@@ -765,6 +765,10 @@ def main() -> None:
 
 
 def _accept(command: str, args: dict[str, Any]) -> dict[str, Any]:
+    import os
+
+    if os.environ.get("SKINTWIN_CHAIN_SKIP_DISPATCH") == "1":
+        return args
     from domain.dispatch import accept
 
     return accept(command, args)

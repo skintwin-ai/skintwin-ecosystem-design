@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Batch manufacture acceptance. The hub owns this stage until a plant service exists."""
+"""Batch manufacture acceptance. The hub ledger is the plant record until a plant service exists."""
 
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import sys
+from pathlib import Path
 
 
 def manufacture(args: dict) -> dict:
@@ -51,7 +54,34 @@ def main() -> None:
         artifact = manufacture(request.get("args") or {})
     except ValueError as exc:
         _fail(str(exc))
+    committed = _commit(request)
+    if committed is not None:
+        _fail(committed)
     json.dump({"ok": True, "artifact": artifact}, sys.stdout)
+
+
+def _commit(request: dict) -> str | None:
+    if os.environ.get("SKINTWIN_CHAIN_SKIP_DISPATCH") == "1":
+        return None
+    ledger = os.environ.get("SKINTWIN_CHAIN_LEDGER")
+    if not ledger:
+        return None
+    hub = Path(__file__).resolve().parents[1]
+    completed = subprocess.run(
+        [sys.executable, "-m", "domain.ledger"],
+        input=json.dumps(request),
+        text=True,
+        capture_output=True,
+        cwd=hub,
+        check=False,
+    )
+    if completed.returncode == 0:
+        return None
+    try:
+        message = json.loads(completed.stdout or "{}").get("error")
+    except json.JSONDecodeError:
+        message = None
+    return str(message or completed.stderr or "ledger rejected the command")
 
 
 def _fail(message: str) -> None:
