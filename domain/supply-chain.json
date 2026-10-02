@@ -1,0 +1,60 @@
+{
+  "stages": [
+    {
+      "id": "specify",
+      "owner": "skinsource-pro",
+      "artifact": "ingredient"
+    },
+    {
+      "id": "source",
+      "owner": "skinsource-pro",
+      "artifact": "supplier-qualification"
+    },
+    {
+      "id": "procure",
+      "owner": "skinsource-pro",
+      "artifact": "ingredient-lot"
+    },
+    {
+      "id": "formulate",
+      "owner": "skinform",
+      "artifact": "formula"
+    },
+    {
+      "id": "manufacture",
+      "owner": "skintwin-ecosystem-design",
+      "artifact": "batch",
+      "note": "No sibling records batch genealogy. This ledger is the system of record until a plant service exists."
+    },
+    {
+      "id": "catalog",
+      "owner": "skintwin-customer-portal",
+      "artifact": "sku"
+    },
+    {
+      "id": "distribute",
+      "owner": "skintwin-salon",
+      "artifact": "location-stock"
+    },
+    {
+      "id": "certify",
+      "owner": "regima-training-lms",
+      "artifact": "practitioner-certificate"
+    },
+    {
+      "id": "fulfill",
+      "owner": "skintwin-customer-portal",
+      "artifact": "fulfillment"
+    },
+    {
+      "id": "account",
+      "owner": "skintwin-integrations",
+      "artifact": "settlement"
+    },
+    {
+      "id": "outcome",
+      "owner": "skintwin",
+      "artifact": "skin-outcome"
+    }
+  ]
+}

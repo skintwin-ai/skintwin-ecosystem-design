@@ -4,6 +4,8 @@ This hub is the Cloud Agent entry for **org-wide skintwin-ai work**. Start those
 
 The canonical domain model is [`domain/org-ecosystem.json`](domain/org-ecosystem.json). Install kind, CPU-core vs checkout-only, skip-missing, frozen lockfiles, and hub-only constraints live there. Do not re-encode those decisions as new if/else in scripts or docs.
 
+The supply chain is [`domain/supply-chain.json`](domain/supply-chain.json) plus the ledger in `domain/supply_chain.py`. Stage owners point at sibling repositories. Run `python3 -m domain.supply_chain` to walk one serum from ingredient identity through a skin outcome. Do not add a second chain of custody in a sibling.
+
 ## Sibling layout
 
 Search roots (override with `CLOUD_AGENT_REPO_ROOTS`, colon-separated):

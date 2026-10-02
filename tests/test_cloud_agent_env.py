@@ -34,6 +34,7 @@ REQUIRED_SUBAGENTS = (
     "hub-only-guard",
     "ecosystem-domain",
     "agents-memory-updater",
+    "supply-chain",
 )
 
 
