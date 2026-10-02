@@ -181,6 +181,10 @@
         {
           "stage": "outcome",
           "args": [{ "outcomeId": "outcome-cleanser", "fulfillmentId": "order-cleanser:0:sku-cleanser", "concern": "dryness", "score": 64 }]
+        },
+        {
+          "stage": "distribute",
+          "args": ["replenish-outlets", { "replenish": true }]
         }
       ]
     }

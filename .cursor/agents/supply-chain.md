@@ -7,7 +7,7 @@ You keep the skintwin-ai supply chain as one ledger, not a new branch in each si
 
 Canonical stages: `domain/supply-chain.json`
 Ledger: `domain/supply_chain.py`
-Exercise: `python3 -m domain.platform` walks every product in `domain/operations.json` by calling that stage's `invoke` function. `python3 -m domain.metagraph` projects those sales through the formulation waist. The metagraph is not a second ledger.
+Exercise: `python3 -m domain.platform` walks every product in `domain/operations.json` by calling that stage's `invoke` function. `python3 -m domain.metagraph` projects those sales through the formulation waist. The same projection names the plant-to-outlet transfers that replace what each outlet sold; the salon records that shipment as one ledger write. The metagraph is not a second ledger.
 
 When invoked:
 

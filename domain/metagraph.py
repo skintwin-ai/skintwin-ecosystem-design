@@ -15,7 +15,7 @@ from math import gcd
 from pathlib import Path
 from typing import Mapping
 
-from domain.supply_chain import Chain, ChainError, reference_serum
+from domain.supply_chain import PLANT, Chain, ChainError, reference_serum
 
 DOCUMENT_PATH = Path(__file__).resolve().parent / "metagraph.json"
 SIDES = frozenset({"supply", "demand", "center"})
@@ -104,6 +104,7 @@ class SaleLink:
 @dataclass(frozen=True)
 class Bowtie:
     sales: tuple[SaleLink, ...]
+    logistics: tuple[tuple[str, str, str, int], ...] = ()
 
     def supplier_demand(self) -> tuple[tuple[str, str, str, int], ...]:
         """(qualification, supplier, ingredient, milligrams) across every outlet."""
@@ -203,7 +204,16 @@ def project(chain: Chain, document: Document | None = None) -> Bowtie:
                 _connect(chain, fulfillment, templates),
             )
         )
-    return Bowtie(tuple(sales))
+    plan = tuple(
+        (
+            item["args"]["sku_id"],
+            item["args"]["batch_id"],
+            item["args"]["destination"],
+            item["args"]["milligrams"],
+        )
+        for item in replenishment_commands(chain, "logistics")
+    )
+    return Bowtie(tuple(sales), plan)
 
 
 def format_bowtie(bowtie: Bowtie) -> str:
@@ -234,10 +244,89 @@ def format_bowtie(bowtie: Bowtie) -> str:
     lines.append("packaging demand:")
     for component, supplier, numer, denom in bowtie.packaging_demand():
         lines.append(f"  {supplier} {component} {numer}/{denom}")
+    lines.append("logistics:")
+    for sku_id, batch_id, destination, milligrams in bowtie.logistics:
+        lines.append(f"  {PLANT} {destination} {sku_id} {batch_id} {milligrams} mg")
     return "\n".join(lines)
 
 
+def replenishment_commands(chain: Chain, shipment_id: str) -> list[dict]:
+    """Transfers that replace what each outlet sold, drawn from plant stock.
+
+    Repeating the same shipment id sends nothing further. A short plant is
+    shared across outlets in proportion to what they sold.
+    """
+    if not isinstance(shipment_id, str) or not shipment_id.strip():
+        raise MetagraphError("shipment id is required")
+    shipment_id = shipment_id.strip()
+    prefix = f"{shipment_id}:"
+    demand: dict[tuple[str, str, str], int] = {}
+    for fulfillment in chain.fulfillments:
+        if fulfillment.location == PLANT:
+            continue
+        for draw in fulfillment.draws:
+            key = (fulfillment.sku_id, draw.batch_id, fulfillment.location)
+            demand[key] = demand.get(key, 0) + draw.milligrams
+    covered: dict[tuple[str, str, str], int] = {}
+    for movement in chain.movements:
+        if movement.milligrams < 1 or not str(movement.ref).startswith(prefix):
+            continue
+        key = (movement.sku_id, movement.batch_id, movement.location)
+        covered[key] = covered.get(key, 0) + movement.milligrams
+    by_batch: dict[tuple[str, str], list[tuple[str, int]]] = {}
+    for (sku_id, batch_id, location), sold in sorted(demand.items()):
+        need = sold - covered.get((sku_id, batch_id, location), 0)
+        if need < 1:
+            continue
+        by_batch.setdefault((sku_id, batch_id), []).append((location, need))
+    commands: list[dict] = []
+    index = 0
+    for sku_id, batch_id in sorted(by_batch):
+        outlets = by_batch[(sku_id, batch_id)]
+        available = chain.balance(sku_id, batch_id, PLANT)
+        if available < 1:
+            continue
+        requested = [milligrams for _location, milligrams in outlets]
+        total = sum(requested)
+        granted = requested if total <= available else _attribute(available, requested, total)
+        for (location, _need), milligrams in zip(outlets, granted):
+            if milligrams < 1:
+                continue
+            commands.append(
+                {
+                    "command": "transfer",
+                    "args": {
+                        "transfer_id": f"{prefix}{index}",
+                        "sku_id": sku_id,
+                        "batch_id": batch_id,
+                        "source": PLANT,
+                        "destination": location,
+                        "milligrams": milligrams,
+                    },
+                }
+            )
+            index += 1
+    return commands
+
+
 def main() -> None:
+    import sys
+
+    if len(sys.argv) >= 2 and sys.argv[1] == "--replenish":
+        from domain.ledger import ledger_path, replay
+
+        shipment = sys.argv[2] if len(sys.argv) > 2 else ""
+        path = ledger_path()
+        if path is None:
+            sys.stdout.write(json.dumps({"error": "ledger is not set"}))
+            raise SystemExit(1)
+        try:
+            commands = replenishment_commands(replay(path), shipment)
+        except (MetagraphError, ChainError) as exc:
+            sys.stdout.write(json.dumps({"error": str(exc)}))
+            raise SystemExit(1)
+        json.dump(commands, sys.stdout)
+        return
     print(format_bowtie(project(reference_serum())))
 
 

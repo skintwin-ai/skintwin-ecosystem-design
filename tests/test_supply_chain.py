@@ -232,8 +232,11 @@ class SupplyChainTests(unittest.TestCase):
         self.assertEqual(
             chain.balance("sku-cleanser", "batch-cleanser", "johannesburg"), 4_000
         )
-        self.assertEqual(chain.balance("sku-serum-c", "batch-1", PLANT), 10_500)
-        self.assertEqual(chain.balance("sku-serum-c", "batch-1", "cape-town"), 3_500)
+        self.assertEqual(chain.balance("sku-serum-c", "batch-1", PLANT), 3_500)
+        self.assertEqual(chain.balance("sku-serum-c", "batch-1", "cape-town"), 10_500)
+        from domain.metagraph import replenishment_commands
+
+        self.assertEqual(replenishment_commands(chain, "replenish-outlets"), [])
         self.assertEqual(chain.package_remaining("lot-bottle"), 2)
         self.assertEqual(chain.package_remaining("lot-tube"), 2)
         from domain.metagraph import project
@@ -436,6 +439,31 @@ class SupplyChainTests(unittest.TestCase):
             ),
         )
         self.assertEqual(bowtie.packaging_demand(), (("bottle-30", "Cape Glass", 2, 3),))
+        self.assertEqual(bowtie.logistics, (("sku-serum-c", "batch-1", "cape-town", 7_000),))
+        from domain.metagraph import replenishment_commands
+
+        planned = replenishment_commands(self.chain, "replenish-outlets")
+        self.assertEqual(planned[0]["args"]["milligrams"], 7_000)
+        restocked = self.chain
+        for command in planned:
+            args = command["args"]
+            restocked = restocked.transfer(
+                args["transfer_id"],
+                args["sku_id"],
+                args["batch_id"],
+                args["source"],
+                args["destination"],
+                args["milligrams"],
+            )
+        self.assertEqual(replenishment_commands(restocked, "replenish-outlets"), [])
+        self.assertEqual(restocked.balance("sku-serum-c", "batch-1", PLANT), 3_500)
+        self.assertEqual(restocked.balance("sku-serum-c", "batch-1", "cape-town"), 10_500)
+        short = self.chain.transfer(
+            "xfer-extra", "sku-serum-c", "batch-1", PLANT, "johannesburg", 8_000
+        )
+        capped = replenishment_commands(short, "replenish-short")
+        self.assertEqual(capped[0]["args"]["destination"], "cape-town")
+        self.assertEqual(capped[0]["args"]["milligrams"], 2_500)
         assert retail.connect is not None and treatment.connect is not None
         self.assertEqual(retail.connect.destination_role, "Outlet")
         self.assertEqual(retail.connect.platform_fee_cents, 462)
