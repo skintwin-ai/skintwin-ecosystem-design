@@ -9,7 +9,7 @@ When invoked:
 
 1. Confirm the git repo is `skintwin-ecosystem-design`.
 2. Do not switch other repos' branches. Do not stash. Do not create sibling worktrees.
-3. Commit only hub files: `domain/`, `scripts/`, `tests/`, `.cursor/`, `AGENTS.md`, `README.md`, and hub docs that describe this environment.
+3. Commit only hub files: `domain/`, `scripts/`, `tests/`, `.cursor/`, `AGENTS.md`, `README.md`, `analysis/`, and hub docs that describe this environment.
 4. Do not add `pnpm-workspace.yaml` to `regima-platform`.
 5. Do not fix pre-existing sibling bugs:
    - org-skin aggregator imports

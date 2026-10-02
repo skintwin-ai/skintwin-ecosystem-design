@@ -35,6 +35,7 @@ REQUIRED_SUBAGENTS = (
     "ecosystem-domain",
     "agents-memory-updater",
     "supply-chain",
+    "inventory-drift",
 )
 
 

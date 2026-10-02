@@ -5,6 +5,15 @@ This hub is the Cloud Agent entry for **org-wide skintwin-ai work**. Start those
 The canonical domain model is [`domain/org-ecosystem.json`](domain/org-ecosystem.json). Install kind, CPU-core vs checkout-only, skip-missing, frozen lockfiles, and hub-only constraints live there. Do not re-encode those decisions as new if/else in scripts or docs.
 
 The supply chain is [`domain/supply-chain.json`](domain/supply-chain.json) plus the ledger in `domain/supply_chain.py`. Each stage `entry` is a command script in the owning checkout. Set `SKINTWIN_CHAIN_LEDGER` to an append-only command log; `domain/ledger.py` replays it. Owners record a step only after they accept it, and the log rejects a step that breaks custody. Run `python3 -m domain.platform` to walk one serum through every owner into a replayable ledger, or `python3 -m domain.supply_chain` for the same serum in memory. Skinform releases batches; the hub ledger stores the genealogy. Do not add a second chain of custody in a sibling.
+Inventory and checkout drift are consumers of that registry:
+
+```
+python3 -m domain.inventory
+python3 -m domain.inventory --check-analysis
+python3 -m domain.inventory --write-analysis
+```
+
+`analysis/repository_analysis.md` is the rendered inventory. Do not hand-edit sibling rows. Observed lockfiles on checkout-only trees are not a role change.
 
 ## Sibling layout
 
