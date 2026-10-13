@@ -207,6 +207,8 @@ def project(chain: Chain, document: Document | None = None) -> Bowtie:
                 _connect(chain, fulfillment, templates),
             )
         )
+    from domain.platform import replenishment_shipment
+
     plan = tuple(
         (
             item["args"]["sku_id"],
@@ -214,7 +216,7 @@ def project(chain: Chain, document: Document | None = None) -> Bowtie:
             item["args"]["destination"],
             item["args"]["milligrams"],
         )
-        for item in replenishment_commands(chain, "logistics")
+        for item in replenishment_commands(chain, replenishment_shipment())
     )
     return Bowtie(tuple(sales), plan)
 
@@ -256,13 +258,17 @@ def format_bowtie(bowtie: Bowtie) -> str:
 def replenishment_commands(chain: Chain, shipment_id: str) -> list[dict]:
     """Transfers that replace what each outlet sold, drawn from plant stock.
 
-    Repeating the same shipment id sends nothing further. A short plant is
-    shared across outlets in proportion to what they sold.
+    Repeating the same shipment id sends nothing further, including after more
+    stock arrives at the plant. A later shipment id replaces only what earlier
+    replenishment has not already sent. Distribution transfers stay uncovered.
+    A short plant is shared across outlets in proportion to what they sold.
     """
     if not isinstance(shipment_id, str) or not shipment_id.strip():
         raise MetagraphError("shipment id is required")
     shipment_id = shipment_id.strip()
-    prefix = f"{shipment_id}:"
+    if _shipment_already_sent(chain, shipment_id):
+        return []
+    prefix = f"replenish:{shipment_id}:"
     demand: dict[tuple[str, str, str], int] = {}
     returned = {item.fulfillment_id for item in chain.returns}
     for fulfillment in chain.fulfillments:
@@ -273,7 +279,7 @@ def replenishment_commands(chain: Chain, shipment_id: str) -> list[dict]:
             demand[key] = demand.get(key, 0) + draw.milligrams
     covered: dict[tuple[str, str, str], int] = {}
     for movement in chain.movements:
-        if movement.milligrams < 1 or not str(movement.ref).startswith(prefix):
+        if movement.milligrams < 1 or not _replenishment_ref(str(movement.ref)):
             continue
         key = (movement.sku_id, movement.batch_id, movement.location)
         covered[key] = covered.get(key, 0) + movement.milligrams
@@ -311,6 +317,38 @@ def replenishment_commands(chain: Chain, shipment_id: str) -> list[dict]:
             )
             index += 1
     return commands
+
+
+def _shipment_already_sent(chain: Chain, shipment_id: str) -> bool:
+    """True when this shipment id already moved stock."""
+    from domain.platform import replenishment_shipments
+
+    current = f"replenish:{shipment_id}:"
+    legacy = f"{shipment_id}:" if shipment_id in replenishment_shipments() else ""
+    for movement in chain.movements:
+        if movement.milligrams < 1:
+            continue
+        ref = str(movement.ref)
+        if ref.startswith(current) or (legacy and ref.startswith(legacy)):
+            return True
+    return False
+
+
+def _replenishment_ref(ref: str) -> bool:
+    """A replenishment transfer, not a distribution or a return.
+
+    New transfers are ``replenish:{shipment}:{index}``. A ledger written before
+    that prefix still counts an operations shipment id.
+    """
+    from domain.platform import replenishment_shipments
+
+    if ref.startswith("replenish:"):
+        return True
+    for shipment_id in replenishment_shipments():
+        prefix = f"{shipment_id}:"
+        if ref.startswith(prefix) and ref[len(prefix) :].isdigit():
+            return True
+    return False
 
 
 def main() -> None:

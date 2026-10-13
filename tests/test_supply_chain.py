@@ -160,6 +160,42 @@ class SupplyChainTests(unittest.TestCase):
             )
         self.assertEqual(self.chain.package_remaining("lot-bottle"), 2)
 
+    def test_a_transfer_id_moves_stock_once(self) -> None:
+        plant = self.chain.balance("sku-serum-c", "batch-1", PLANT)
+        cape = self.chain.balance("sku-serum-c", "batch-1", "cape-town")
+        with self.assertRaises(ChainError) as replayed:
+            self.chain.transfer(
+                "xfer-cape-town",
+                "sku-serum-c",
+                "batch-1",
+                PLANT,
+                "cape-town",
+                1_000,
+            )
+        self.assertIn("already exists", str(replayed.exception))
+        with self.assertRaises(ChainError) as occupied:
+            self.chain.transfer(
+                "batch-1",
+                "sku-serum-c",
+                "batch-1",
+                PLANT,
+                "johannesburg",
+                1_000,
+            )
+        self.assertIn("already exists", str(occupied.exception))
+        self.assertEqual(self.chain.balance("sku-serum-c", "batch-1", PLANT), plant)
+        self.assertEqual(self.chain.balance("sku-serum-c", "batch-1", "cape-town"), cape)
+        moved = self.chain.transfer(
+            "xfer-johannesburg",
+            "sku-serum-c",
+            "batch-1",
+            PLANT,
+            "johannesburg",
+            1_000,
+        )
+        self.assertEqual(moved.balance("sku-serum-c", "batch-1", PLANT), plant - 1_000)
+        self.assertEqual(moved.balance("sku-serum-c", "batch-1", "johannesburg"), 1_000)
+
     def test_treatment_requires_a_certificate_and_outcome_requires_fulfillment(self) -> None:
         bare = Chain()
         with self.assertRaises(ChainError):
@@ -243,9 +279,11 @@ class SupplyChainTests(unittest.TestCase):
         )
         self.assertEqual(chain.balance("sku-serum-c", "batch-1", PLANT), 3_500)
         self.assertEqual(chain.balance("sku-serum-c", "batch-1", "cape-town"), 10_500)
-        from domain.metagraph import replenishment_commands
+        from domain.metagraph import project, replenishment_commands
 
         self.assertEqual(replenishment_commands(chain, "replenish-outlets"), [])
+        self.assertEqual(replenishment_commands(chain, "another-shipment"), [])
+        self.assertEqual(project(chain).logistics, ())
         self.assertEqual(chain.package_remaining("lot-bottle"), 2)
         self.assertEqual(chain.package_remaining("lot-tube"), 2)
         from domain.metagraph import project
@@ -273,6 +311,10 @@ class SupplyChainTests(unittest.TestCase):
         self.assertEqual(products[1].traces, (CLEANSER_FULFILLMENT,))
         called = {stage_id for product in products for stage_id, _args in product.calls}
         self.assertEqual(called, {stage.id for stage in self.stages})
+        from domain.platform import replenishment_shipment, replenishment_shipments
+
+        self.assertEqual(replenishment_shipments(), ("replenish-outlets",))
+        self.assertEqual(replenishment_shipment(), "replenish-outlets")
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "operations.json"
             path.write_text(json.dumps({"products": [{"id": "x", "traces": ["a"], "calls": [{"stage": "nope", "args": []}]}]}))
@@ -466,6 +508,7 @@ class SupplyChainTests(unittest.TestCase):
                 args["milligrams"],
             )
         self.assertEqual(replenishment_commands(restocked, "replenish-outlets"), [])
+        self.assertEqual(replenishment_commands(restocked, "another-shipment"), [])
         self.assertEqual(restocked.balance("sku-serum-c", "batch-1", PLANT), 3_500)
         self.assertEqual(restocked.balance("sku-serum-c", "batch-1", "cape-town"), 10_500)
         short = self.chain.transfer(
@@ -474,6 +517,26 @@ class SupplyChainTests(unittest.TestCase):
         capped = replenishment_commands(short, "replenish-short")
         self.assertEqual(capped[0]["args"]["destination"], "cape-town")
         self.assertEqual(capped[0]["args"]["milligrams"], 2_500)
+        self.assertEqual(capped[0]["args"]["transfer_id"], "replenish:replenish-short:0")
+        partial = short
+        for command in capped:
+            args = command["args"]
+            partial = partial.transfer(
+                args["transfer_id"],
+                args["sku_id"],
+                args["batch_id"],
+                args["source"],
+                args["destination"],
+                args["milligrams"],
+            )
+        refilled = partial.transfer(
+            "xfer-back", "sku-serum-c", "batch-1", "johannesburg", PLANT, 4_500
+        )
+        self.assertEqual(replenishment_commands(refilled, "replenish-short"), [])
+        follow = replenishment_commands(refilled, "another-shipment")
+        self.assertEqual(follow[0]["args"]["destination"], "cape-town")
+        self.assertEqual(follow[0]["args"]["milligrams"], 4_500)
+        self.assertEqual(follow[0]["args"]["transfer_id"], "replenish:another-shipment:0")
         assert retail.connect is not None and treatment.connect is not None
         self.assertEqual(retail.connect.destination_role, "Outlet")
         self.assertEqual(retail.connect.platform_fee_cents, 462)
