@@ -12,6 +12,30 @@ from domain.model import NODE_KINDS, PYTHON_KINDS, Registry, Repo, load_registry
 MARKER_FILES = ("package.json", "pyproject.toml", "requirements.txt", "README.md")
 
 
+def named_directory(root: Path, name: str) -> Path | None:
+    """Exact child directory, or the only child whose name matches ignoring case.
+
+    Two or more case variants are not a checkout. The exact name wins when it
+    is present, including on a case-sensitive filesystem that also has a fold.
+    """
+    if not name or name in {".", ".."} or "/" in name or "\\" in name:
+        return None
+    exact = root / name
+    if exact.is_dir():
+        return exact
+    if not root.is_dir():
+        return None
+    folded = name.casefold()
+    matches = [
+        child
+        for child in root.iterdir()
+        if child.is_dir() and child.name.casefold() == folded
+    ]
+    if len(matches) == 1:
+        return matches[0]
+    return None
+
+
 def default_repo_roots(registry: Registry) -> str:
     return ":".join(registry.search_roots)
 
@@ -22,8 +46,10 @@ def find_repo(name: str, registry: Registry) -> Path | None:
     for raw in roots.split(":"):
         if not raw:
             continue
-        directory = Path(raw) / name
-        if directory.is_dir() and any((directory / marker).is_file() for marker in MARKER_FILES):
+        directory = named_directory(Path(raw), name)
+        if directory is not None and any(
+            (directory / marker).is_file() for marker in MARKER_FILES
+        ):
             return directory
     if override is None:
         workspace_pkg = Path("/workspace/package.json")

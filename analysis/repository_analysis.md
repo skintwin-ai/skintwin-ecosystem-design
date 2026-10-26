@@ -82,7 +82,7 @@ Present trees may have lockfiles. Install still ignores them.
 
 ## Discovery markers
 
-`find_repo` treats a sibling as present only when a search-root directory contains one of `package.json, pyproject.toml, requirements.txt, README.md`. Autotools trees that ship `README` without `README.md` can exist on disk and still be undiscoverable. That is inventory drift, not an install failure.
+`find_repo` treats a sibling as present only when a search-root directory contains one of `package.json, pyproject.toml, requirements.txt, README.md`. Directory names match ignoring case. The exact name wins. Two directories that differ only by case are not a checkout. Autotools trees that ship `README` without `README.md` can exist on disk and still be undiscoverable. That is inventory drift, not an install failure.
 
 ## Outside this Cloud Agent snapshot
 

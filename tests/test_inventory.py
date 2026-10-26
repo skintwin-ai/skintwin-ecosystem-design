@@ -120,6 +120,69 @@ class InventoryTests(unittest.TestCase):
         self.assertFalse(by_name["gnu_gneuralnetwork"].discoverable)
         self.assertIn("gnu_gneuralnetwork", report.unmarked_directories)
 
+    def test_casefolded_directory_is_the_checkout(self) -> None:
+        from domain.bootstrap import find_repo
+        from domain.inventory import locate_directory
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            folded = root / "yggdrasil"
+            folded.mkdir()
+            (folded / "README.md").write_text("julia")
+            exact = root / "SolutionSpaceKernel"
+            exact.mkdir()
+            (exact / "README.md").write_text("kernel")
+            twin = root / "solutionspacekernel"
+            twin.mkdir()
+            (twin / "README.md").write_text("folded kernel")
+            previous = os.environ.get("CLOUD_AGENT_REPO_ROOTS")
+            os.environ["CLOUD_AGENT_REPO_ROOTS"] = tmp
+            try:
+                located = locate_directory("Yggdrasil", self.registry)
+                discovered = find_repo("Yggdrasil", self.registry)
+                kernel = locate_directory("SolutionSpaceKernel", self.registry)
+                report = build_inventory(self.registry)
+            finally:
+                if previous is None:
+                    os.environ.pop("CLOUD_AGENT_REPO_ROOTS", None)
+                else:
+                    os.environ["CLOUD_AGENT_REPO_ROOTS"] = previous
+        by_name = {item.name: item for item in report.siblings}
+        self.assertEqual(located, folded)
+        self.assertEqual(discovered, folded)
+        self.assertTrue(by_name["Yggdrasil"].discoverable)
+        self.assertEqual(by_name["Yggdrasil"].directory, str(folded))
+        self.assertEqual(kernel, exact)
+        self.assertNotIn("yggdrasil", report.unregistered)
+        self.assertNotIn("solutionspacekernel", report.unregistered)
+
+    def test_two_case_variants_are_not_a_checkout(self) -> None:
+        from domain.bootstrap import find_repo
+        from domain.inventory import locate_directory
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for folder in ("yggdrasil", "YGGDRASIL"):
+                directory = root / folder
+                directory.mkdir()
+                (directory / "README.md").write_text(folder)
+            previous = os.environ.get("CLOUD_AGENT_REPO_ROOTS")
+            os.environ["CLOUD_AGENT_REPO_ROOTS"] = tmp
+            try:
+                located = locate_directory("Yggdrasil", self.registry)
+                discovered = find_repo("Yggdrasil", self.registry)
+                report = build_inventory(self.registry)
+            finally:
+                if previous is None:
+                    os.environ.pop("CLOUD_AGENT_REPO_ROOTS", None)
+                else:
+                    os.environ["CLOUD_AGENT_REPO_ROOTS"] = previous
+        self.assertIsNone(located)
+        self.assertIsNone(discovered)
+        self.assertNotIn("yggdrasil", report.unregistered)
+        self.assertNotIn("YGGDRASIL", report.unregistered)
+        self.assertIn("Yggdrasil", report.missing_discoverable)
+
     def test_cli_check_and_write_analysis(self) -> None:
         env = os.environ.copy()
         env["PYTHONPATH"] = str(HUB_ROOT)
