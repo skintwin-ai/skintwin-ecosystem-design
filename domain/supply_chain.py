@@ -567,7 +567,7 @@ class Chain:
         settlement_id: str,
         fulfillment_id: str,
         amount_cents: int,
-        currency: str,
+        currency: str | None,
     ) -> Chain:
         accepted = _accept(
             "settle",
@@ -581,13 +581,15 @@ class Chain:
         settlement_id = str(accepted["settlement_id"])
         fulfillment_id = str(accepted["fulfillment_id"])
         amount_cents = int(accepted["amount_cents"])
-        currency = str(accepted["currency"])
+        raw_currency = accepted.get("currency")
         _fresh_id(settlement_id, self.settlements)
         self._fulfillment(fulfillment_id)
         if any(item.fulfillment_id == fulfillment_id for item in self.settlements):
             raise ChainError(f"fulfillment {fulfillment_id} is already settled")
         _positive(amount_cents, "amount_cents")
-        currency = _text(currency, "currency")
+        if not isinstance(raw_currency, str) or not raw_currency.strip():
+            raise ChainError("currency is required")
+        currency = raw_currency.strip()
         if len(currency) != 3 or not currency.isalpha():
             raise ChainError("currency must be a 3-letter code")
         return replace(

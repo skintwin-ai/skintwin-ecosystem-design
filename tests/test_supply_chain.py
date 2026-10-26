@@ -84,6 +84,29 @@ class SupplyChainTests(unittest.TestCase):
             self.chain.balance("sku-serum-c", "batch-1", "cape-town"), 3_500
         )
 
+    def test_settlement_requires_a_currency(self) -> None:
+        previous = os.environ.get("SKINTWIN_CHAIN_SKIP_DISPATCH")
+        os.environ["SKINTWIN_CHAIN_SKIP_DISPATCH"] = "1"
+        try:
+            with self.assertRaises(ChainError) as blank:
+                self.chain.settle("pay-blank", "order-returned", 1_000, "  ")
+            self.assertEqual(str(blank.exception), "currency is required")
+            with self.assertRaises(ChainError) as missing:
+                self.chain.settle("pay-missing", "order-returned", 1_000, None)
+            self.assertEqual(str(missing.exception), "currency is required")
+            with self.assertRaises(ChainError) as short:
+                self.chain.settle("pay-short", "order-returned", 1_000, "US")
+            self.assertEqual(str(short.exception), "currency must be a 3-letter code")
+            settled = self.chain.settle("pay-returned", "order-returned", 1_000, "zar")
+        finally:
+            if previous is None:
+                os.environ.pop("SKINTWIN_CHAIN_SKIP_DISPATCH", None)
+            else:
+                os.environ["SKINTWIN_CHAIN_SKIP_DISPATCH"] = previous
+        recorded = next(item for item in settled.settlements if item.id == "pay-returned")
+        self.assertEqual(recorded.currency, "ZAR")
+        self.assertEqual(recorded.amount_cents, 1_000)
+
     def test_mass_is_conserved(self) -> None:
         finished = 21_000
         held = sum(movement.milligrams for movement in self.chain.movements)
