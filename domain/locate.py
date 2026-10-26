@@ -53,6 +53,30 @@ def bind_ledger() -> Path | None:
     return hub
 
 
+def _named_directory(root: Path, name: str) -> Path | None:
+    """Exact child directory, or the only child whose name matches ignoring case.
+
+    Mirrors domain.bootstrap.named_directory. Stage owners load this file
+    without importing the install module.
+    """
+    if not name or name in {".", ".."} or "/" in name or "\\" in name:
+        return None
+    exact = root / name
+    if exact.is_dir():
+        return exact
+    if not root.is_dir():
+        return None
+    folded = name.casefold()
+    matches = [
+        child
+        for child in root.iterdir()
+        if child.is_dir() and child.name.casefold() == folded
+    ]
+    if len(matches) == 1:
+        return matches[0]
+    return None
+
+
 def checkout(name: str) -> Path | None:
     """Resolve a sibling from registry search roots."""
     if not name or name in {".", ".."} or "/" in name or "\\" in name:
@@ -65,8 +89,10 @@ def checkout(name: str) -> Path | None:
     if name == hub_name:
         return hub
     for root in _search_roots(hub, registry):
-        directory = root / name
-        if directory.is_dir() and any((directory / marker).is_file() for marker in MARKER_FILES):
+        directory = _named_directory(root, name)
+        if directory is not None and any(
+            (directory / marker).is_file() for marker in MARKER_FILES
+        ):
             return directory
     return None
 

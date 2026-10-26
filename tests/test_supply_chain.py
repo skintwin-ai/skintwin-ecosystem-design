@@ -410,6 +410,58 @@ class SupplyChainTests(unittest.TestCase):
             else:
                 os.environ["CLOUD_AGENT_REPO_ROOTS"] = previous_roots
 
+    def test_checkout_matches_one_case_variant_and_prefers_exact_name(self) -> None:
+        import subprocess
+
+        from domain.locate import checkout
+
+        previous_hub = os.environ.get("SKINTWIN_HUB_ROOT")
+        previous_roots = os.environ.get("CLOUD_AGENT_REPO_ROOTS")
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                folded = root / "yggdrasil"
+                folded.mkdir()
+                (folded / "README.md").write_text("julia")
+                os.environ["SKINTWIN_HUB_ROOT"] = str(HUB_ROOT)
+                os.environ["CLOUD_AGENT_REPO_ROOTS"] = tmp
+                self.assertEqual(checkout("Yggdrasil"), folded.resolve())
+                exact = root / "SolutionSpaceKernel"
+                exact.mkdir()
+                (exact / "README.md").write_text("exact")
+                (root / "solutionspacekernel").mkdir()
+                (root / "solutionspacekernel" / "README.md").write_text("folded")
+                self.assertEqual(checkout("SolutionSpaceKernel"), exact.resolve())
+                env = os.environ.copy()
+                completed = subprocess.run(
+                    [
+                        "node",
+                        "-e",
+                        "const path = require('node:path');"
+                        "const locate = require('./domain/locate.cjs');"
+                        "const root = process.env.CLOUD_AGENT_REPO_ROOTS;"
+                        "const folded = locate.checkout('Yggdrasil');"
+                        "const exact = locate.checkout('SolutionSpaceKernel');"
+                        "if (folded !== path.resolve(root, 'yggdrasil')) process.exit(2);"
+                        "if (exact !== path.resolve(root, 'SolutionSpaceKernel')) process.exit(3);",
+                    ],
+                    cwd=HUB_ROOT,
+                    capture_output=True,
+                    text=True,
+                    env=env,
+                    check=False,
+                )
+                self.assertEqual(completed.returncode, 0, completed.stderr)
+        finally:
+            if previous_hub is None:
+                os.environ.pop("SKINTWIN_HUB_ROOT", None)
+            else:
+                os.environ["SKINTWIN_HUB_ROOT"] = previous_hub
+            if previous_roots is None:
+                os.environ.pop("CLOUD_AGENT_REPO_ROOTS", None)
+            else:
+                os.environ["CLOUD_AGENT_REPO_ROOTS"] = previous_roots
+
     def test_a_rejected_command_list_appends_nothing(self) -> None:
         from domain.ledger import append_command, append_commands, replay
 

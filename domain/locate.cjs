@@ -3,7 +3,7 @@
 // domain JSON files.
 
 const { spawnSync } = require("node:child_process");
-const { existsSync, readFileSync } = require("node:fs");
+const { existsSync, readdirSync, readFileSync, statSync } = require("node:fs");
 const { dirname, join, resolve } = require("node:path");
 
 const MARKER_FILES = ["package.json", "pyproject.toml", "requirements.txt", "README.md"];
@@ -72,6 +72,29 @@ function bindLedger() {
   return hub;
 }
 
+function isDirectory(path) {
+  try {
+    return statSync(path).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+function namedDirectory(root, name) {
+  // Mirrors domain.bootstrap.named_directory. Stage owners load this file
+  // without importing the install module. Repo names are ASCII, so
+  // toLowerCase matches Python casefold for those names.
+  if (!name || name === "." || name === ".." || name.includes("/") || name.includes("\\")) return null;
+  const exact = join(root, name);
+  if (isDirectory(exact)) return exact;
+  if (!isDirectory(root)) return null;
+  const folded = name.toLowerCase();
+  const matches = readdirSync(root).filter(
+    (child) => child.toLowerCase() === folded && isDirectory(join(root, child)),
+  );
+  return matches.length === 1 ? join(root, matches[0]) : null;
+}
+
 function checkout(name) {
   if (!name || name === "." || name === ".." || name.includes("/") || name.includes("\\")) return null;
   const hub = hubRoot();
@@ -79,8 +102,8 @@ function checkout(name) {
   const registry = readJson(hub, "org-ecosystem.json");
   if (name === registry.hub?.name) return hub;
   for (const root of searchRoots(hub)) {
-    const directory = join(root, name);
-    if (MARKER_FILES.some((marker) => existsSync(join(directory, marker)))) return directory;
+    const directory = namedDirectory(root, name);
+    if (directory && MARKER_FILES.some((marker) => existsSync(join(directory, marker)))) return directory;
   }
   return null;
 }

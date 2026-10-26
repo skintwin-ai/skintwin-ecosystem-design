@@ -9,7 +9,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
-from domain.bootstrap import MARKER_FILES, find_repo
+from domain.bootstrap import MARKER_FILES, find_repo, named_directory
 from domain.model import DEFERRED_STACKS, Registry, Repo, load_registry
 
 HUB_ROOT = Path(__file__).resolve().parents[1]
@@ -118,8 +118,8 @@ def search_roots(registry: Registry) -> tuple[str, ...]:
 
 def locate_directory(name: str, registry: Registry) -> Path | None:
     for raw in search_roots(registry):
-        directory = Path(raw) / name
-        if directory.is_dir():
+        directory = named_directory(Path(raw), name)
+        if directory is not None:
             return directory
     return None
 
@@ -170,6 +170,7 @@ def build_inventory(registry: Registry | None = None) -> InventoryReport:
     hub_dir = locate_directory(loaded.hub.name, loaded)
     siblings: list[SiblingStatus] = []
     named = {loaded.hub.name, *(repo.name for repo in loaded.repos)}
+    registered = {item.casefold() for item in named}
     for repo in loaded.repos:
         directory = locate_directory(repo.name, loaded)
         discovered = find_repo(repo.name, loaded)
@@ -195,7 +196,11 @@ def build_inventory(registry: Registry | None = None) -> InventoryReport:
         if not root.is_dir():
             continue
         for child in sorted(root.iterdir()):
-            if not child.is_dir() or child.name.startswith(".") or child.name in named:
+            if (
+                not child.is_dir()
+                or child.name.startswith(".")
+                or child.name.casefold() in registered
+            ):
                 continue
             if any((child / marker).is_file() for marker in MARKER_FILES):
                 unregistered.append(child.name)
@@ -323,6 +328,8 @@ def render_repository_analysis(registry: Registry | None = None) -> str:
             "",
             "`find_repo` treats a sibling as present only when a search-root "
             f"directory contains one of `{', '.join(MARKER_FILES)}`. "
+            "Directory names match ignoring case. The exact name wins. "
+            "Two directories that differ only by case are not a checkout. "
             "Autotools trees that ship `README` without `README.md` can exist on disk "
             "and still be undiscoverable. That is inventory drift, not an install failure.",
             "",

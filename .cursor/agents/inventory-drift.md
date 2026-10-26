@@ -23,4 +23,4 @@ When invoked:
 5. Org members such as `business-directory-template`, `bus-listing`, and `paperclip` stay out of `repositoryDependencies` until an explicit hub edit expands token scope.
 6. Keep tests reading the registry. Do not grow parallel sibling lists.
 
-`find_repo` markers stay `package.json`, `pyproject.toml`, `requirements.txt`, `README.md`. Autotools `README` without `README.md` is drift, not an install failure.
+`find_repo` markers stay `package.json`, `pyproject.toml`, `requirements.txt`, `README.md`. Directory names match ignoring case. The exact name wins. Two directories that differ only by case are not a checkout. Autotools `README` without `README.md` is drift, not an install failure.
