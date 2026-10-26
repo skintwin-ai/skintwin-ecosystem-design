@@ -163,7 +163,7 @@ def _settle(chain: Chain, args: dict) -> Chain:
         args["settlement_id"],
         args["fulfillment_id"],
         int(args["amount_cents"]),
-        args["currency"],
+        args.get("currency"),
     )
 
 
